@@ -1,0 +1,320 @@
+<script lang="ts">
+	import { caseStore } from '$lib/stores/caseStore.svelte';
+	import { labels } from '$lib/i18n/labels';
+	import type {
+		FDI,
+		UndercutLocation,
+		GuidePlane,
+		Prognosis,
+		CrownRoot,
+		SpacingType
+	} from '$lib/types';
+	import SegmentedControl from './SegmentedControl.svelte';
+	import ToggleSwitch from './ToggleSwitch.svelte';
+	import NumericInput from './NumericInput.svelte';
+
+	interface Props {
+		fdi: FDI;
+	}
+	let { fdi }: Props = $props();
+
+	const survey = $derived(caseStore.current.teeth[fdi]);
+	const isPresent = $derived(survey.status === 'present');
+
+	const undercutLocationOptions = [
+		{ value: 'none' as const, label: labels.undercutLocation.none },
+		{ value: 'mesial' as const, label: labels.undercutLocation.mesial },
+		{ value: 'distal' as const, label: labels.undercutLocation.distal },
+		{ value: 'buccal' as const, label: labels.undercutLocation.buccal },
+		{ value: 'lingual' as const, label: labels.undercutLocation.lingual }
+	];
+
+	const undercutPresets = [
+		{ value: 0, label: '0', hint: 'ไม่มี' },
+		{ value: 0.25, label: '0.25', hint: '0.01″' },
+		{ value: 0.5, label: '0.5', hint: '0.02″' },
+		{ value: 0.75, label: '0.75', hint: '0.03″' }
+	];
+
+	const vestibulePresets = [
+		{ value: 5, label: '5', hint: 'ตื้น' },
+		{ value: 7, label: '7', hint: '< lingual bar' },
+		{ value: 8, label: '8', hint: 'lingual bar min' },
+		{ value: 10, label: '10', hint: 'ปกติ' },
+		{ value: 12, label: '12', hint: 'ลึก' }
+	];
+
+	const guidePlaneOptions = [
+		{ value: 'absent' as const, label: labels.guidePlane.absent, tone: 'danger' as const },
+		{ value: 'partial' as const, label: labels.guidePlane.partial, tone: 'warn' as const },
+		{ value: 'adequate' as const, label: labels.guidePlane.adequate, tone: 'good' as const }
+	];
+
+	const prognosisOptions = [
+		{ value: 'good' as const, label: labels.prognosis.good, tone: 'good' as const },
+		{ value: 'questionable' as const, label: labels.prognosis.questionable, tone: 'warn' as const },
+		{ value: 'poor' as const, label: labels.prognosis.poor, tone: 'danger' as const }
+	];
+
+	const crownRootOptions = [
+		{ value: 'favorable' as const, label: labels.crownRoot.favorable, tone: 'good' as const },
+		{
+			value: 'borderline' as const,
+			label: labels.crownRoot.borderline,
+			tone: 'warn' as const
+		},
+		{
+			value: 'unfavorable' as const,
+			label: labels.crownRoot.unfavorable,
+			tone: 'danger' as const
+		}
+	];
+
+	const spacingOptions = [
+		{ value: 'none' as const, label: labels.spacing.none },
+		{ value: 'diastema' as const, label: labels.spacing.diastema, tone: 'warn' as const },
+		{ value: 'drift' as const, label: labels.spacing.drift, tone: 'warn' as const },
+		{ value: 'foodTrap' as const, label: labels.spacing.foodTrap, tone: 'warn' as const },
+		{ value: 'esthetic' as const, label: labels.spacing.esthetic, tone: 'warn' as const }
+	];
+</script>
+
+<article class="card editor" aria-labelledby="se-title">
+	<header class="editor-header">
+		<div>
+			<p class="editor-eyebrow">รายละเอียดฟัน</p>
+			<h2 id="se-title">ฟัน {fdi}</h2>
+		</div>
+		<button
+			type="button"
+			class="btn"
+			class:btn-danger={isPresent}
+			class:btn-ghost={!isPresent}
+			onclick={() => caseStore.toggleStatus(fdi)}
+		>
+			{isPresent ? 'ทำเครื่องหมาย: หายไป' : 'ทำเครื่องหมาย: มีอยู่'}
+		</button>
+	</header>
+
+	{#if isPresent}
+		<div class="editor-body">
+			<section class="group" aria-labelledby="sec-undercut">
+				<h3 id="sec-undercut" class="group-title">Survey — Undercut</h3>
+				<div class="group-body">
+					<SegmentedControl
+						label={labels.field.undercutLocation}
+						value={survey.undercutLocation}
+						options={undercutLocationOptions}
+						onchange={(v: UndercutLocation) =>
+							caseStore.updateSurvey(fdi, { undercutLocation: v })}
+					/>
+					<NumericInput
+						label={labels.field.undercutDepthMm}
+						value={survey.undercutDepthMm}
+						min={0}
+						max={2}
+						step={0.05}
+						unit="mm"
+						hint="วัดจาก undercut gauge"
+						presets={undercutPresets}
+						onchange={(v) => caseStore.updateSurvey(fdi, { undercutDepthMm: v })}
+					/>
+				</div>
+			</section>
+
+			<section class="group" aria-labelledby="sec-guide">
+				<h3 id="sec-guide" class="group-title">Guide Plane &amp; Vestibule</h3>
+				<div class="group-body">
+					<SegmentedControl
+						label={labels.field.guidePlane}
+						value={survey.guidePlane}
+						options={guidePlaneOptions}
+						onchange={(v: GuidePlane) => caseStore.updateSurvey(fdi, { guidePlane: v })}
+					/>
+					<NumericInput
+						label={labels.field.vestibuleMm}
+						value={survey.vestibuleMm}
+						min={0}
+						max={20}
+						step={0.5}
+						unit="mm"
+						hint="วัดจาก gingival margin → vestibule"
+						presets={vestibulePresets}
+						onchange={(v) => caseStore.updateSurvey(fdi, { vestibuleMm: v })}
+					/>
+				</div>
+			</section>
+
+			<section class="group" aria-labelledby="sec-prog">
+				<h3 id="sec-prog" class="group-title">Abutment Assessment</h3>
+				<div class="group-body">
+					<SegmentedControl
+						label={labels.field.prognosis}
+						value={survey.prognosis}
+						options={prognosisOptions}
+						onchange={(v: Prognosis) => caseStore.updateSurvey(fdi, { prognosis: v })}
+					/>
+					<SegmentedControl
+						label={labels.field.crownRoot}
+						value={survey.crownRoot}
+						options={crownRootOptions}
+						onchange={(v: CrownRoot) => caseStore.updateSurvey(fdi, { crownRoot: v })}
+					/>
+				</div>
+			</section>
+
+			<section class="group" aria-labelledby="sec-flags">
+				<h3 id="sec-flags" class="group-title">เงื่อนไขเพิ่มเติม</h3>
+				<div class="group-body toggles">
+					<ToggleSwitch
+						label={labels.field.tipped}
+						hint="ฟันเอียงผิดแนว"
+						checked={survey.tipped}
+						onchange={(v) => caseStore.updateSurvey(fdi, { tipped: v })}
+					/>
+					<ToggleSwitch
+						label={labels.field.requiresAlteration}
+						hint="ต้องการตัดแต่งฟันก่อนใส่"
+						checked={survey.requiresAlteration}
+						onchange={(v) => caseStore.updateSurvey(fdi, { requiresAlteration: v })}
+					/>
+				</div>
+			</section>
+
+			<section class="group" aria-labelledby="sec-spacing">
+				<h3 id="sec-spacing" class="group-title">Interdental Spacing</h3>
+				<div class="group-body">
+					<SegmentedControl
+						label={labels.field.spacingMesial}
+						value={survey.spacingMesial}
+						options={spacingOptions}
+						onchange={(v: SpacingType) => caseStore.updateSurvey(fdi, { spacingMesial: v })}
+					/>
+					<SegmentedControl
+						label={labels.field.spacingDistal}
+						value={survey.spacingDistal}
+						options={spacingOptions}
+						onchange={(v: SpacingType) => caseStore.updateSurvey(fdi, { spacingDistal: v })}
+					/>
+				</div>
+			</section>
+
+			<section class="group" aria-labelledby="sec-notes">
+				<h3 id="sec-notes" class="group-title">{labels.field.notes}</h3>
+				<textarea
+					class="notes"
+					rows="3"
+					placeholder="หมายเหตุเฉพาะฟัน เช่น caries, restoration, mobility"
+					value={survey.notes}
+					oninput={(e) =>
+						caseStore.updateSurvey(fdi, { notes: (e.currentTarget as HTMLTextAreaElement).value })}
+				></textarea>
+			</section>
+		</div>
+	{:else}
+		<div class="missing-state">
+			<p class="missing-icon" aria-hidden="true">⌀</p>
+			<p class="missing-title">ฟันนี้หายไป</p>
+			<p class="missing-body">ฟันที่หายไปจะถูกพิจารณาสำหรับการออกแบบฐานฟันปลอม</p>
+		</div>
+	{/if}
+</article>
+
+<style>
+	.editor {
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.editor-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+	.editor-eyebrow {
+		font-size: 0.6875rem;
+		color: var(--color-ink-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+	#se-title {
+		font-size: 1.375rem;
+		font-weight: 700;
+		color: var(--color-teal-800);
+		line-height: 1.1;
+	}
+	.editor-body {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.group-title {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-ink);
+		margin-bottom: 0.625rem;
+		padding-bottom: 0.375rem;
+		border-bottom: 1px dashed var(--color-line);
+	}
+	.group-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+	}
+	.group-body.toggles {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.5rem;
+	}
+	@media (min-width: 480px) {
+		.group-body.toggles {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+	.notes {
+		width: 100%;
+		padding: 0.625rem 0.75rem;
+		border: 1px solid var(--color-line);
+		border-radius: 0.5rem;
+		font-family: inherit;
+		font-size: 0.875rem;
+		resize: vertical;
+		background: var(--color-surface-raised);
+		color: var(--color-ink);
+	}
+	.notes:focus {
+		border-color: var(--color-teal-600);
+		outline: none;
+	}
+	.missing-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 0.25rem;
+		padding: 2rem 1rem;
+		background: repeating-linear-gradient(
+			45deg,
+			var(--color-line) 0 4px,
+			transparent 4px 8px
+		);
+		border-radius: 0.75rem;
+	}
+	.missing-icon {
+		font-size: 2.5rem;
+		color: var(--color-ink-muted);
+		line-height: 1;
+	}
+	.missing-title {
+		font-weight: 600;
+		color: var(--color-ink);
+	}
+	.missing-body {
+		font-size: 0.8125rem;
+		color: var(--color-ink-muted);
+		max-width: 24rem;
+	}
+</style>

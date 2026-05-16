@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-sans:
+		'IBM Plex Sans Thai', 'Sarabun', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+	--color-teal-50: #f0fdfa;
+	--color-teal-100: #ccfbf1;
+	--color-teal-500: #14b8a6;
+	--color-teal-600: #0d9488;
+	--color-teal-700: #0f766e;
+	--color-teal-800: #115e59;
+	--color-teal-900: #134e4a;
+
+	--color-coral-100: #fee4e0;
+	--color-coral-300: #f4a89c;
+	--color-coral-500: #d96354;
+	--color-coral-600: #bd4b3f;
+	--color-coral-700: #9c3a31;
+
+	--color-gold-100: #fff3d6;
+	--color-gold-400: #d99026;
+	--color-gold-600: #a46802;
+
+	--color-surface: #f8fafc;
+	--color-surface-raised: #ffffff;
+	--color-ink: #0f172a;
+	--color-ink-muted: #475569;
+	--color-line: #e2e8f0;
+
+	--radius-card: 1rem;
+	--radius-tooth: 0.5rem;
+
+	--shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.06);
+	--shadow-card-raised: 0 4px 6px rgb(15 23 42 / 0.05), 0 12px 24px rgb(15 23 42 / 0.08);
+}
+
+@layer base {
+	:root,
+	[data-theme='light'] {
+		color-scheme: light;
+		--bg-grad: radial-gradient(at 0% 0%, #ecfeff 0%, transparent 50%),
+			radial-gradient(at 100% 0%, #fdf2f0 0%, transparent 45%),
+			radial-gradient(at 50% 100%, #fef9ef 0%, transparent 50%);
+	}
+
+	[data-theme='dark'] {
+		color-scheme: dark;
+		--color-surface: #0b1220;
+		--color-surface-raised: #111a2e;
+		--color-ink: #e5edf8;
+		--color-ink-muted: #94a3b8;
+		--color-line: #1e293b;
+		--color-teal-50: #0b3b35;
+		--color-teal-100: #134e4a;
+		--color-teal-700: #2dd4bf;
+		--color-teal-800: #5eead4;
+		--color-coral-100: #3b1d1a;
+		--color-coral-500: #f87171;
+		--color-coral-600: #fb7185;
+		--color-coral-700: #fda4af;
+		--color-gold-100: #3a2e0e;
+		--color-gold-400: #fcd34d;
+		--color-gold-600: #facc15;
+		--shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+		--shadow-card-raised: 0 4px 6px rgb(0 0 0 / 0.4), 0 12px 24px rgb(0 0 0 / 0.4);
+		--bg-grad: radial-gradient(at 0% 0%, #052e2a 0%, transparent 50%),
+			radial-gradient(at 100% 0%, #2a1212 0%, transparent 45%),
+			radial-gradient(at 50% 100%, #211a05 0%, transparent 50%);
+	}
+
+	html {
+		font-family: var(--font-sans);
+		-webkit-text-size-adjust: 100%;
+	}
+
+	body {
+		background: var(--color-surface);
+		background-image: var(--bg-grad);
+		background-attachment: fixed;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-teal-600);
+		outline-offset: 2px;
+		border-radius: 0.25rem;
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+}
+
+@layer components {
+	.card {
+		background: var(--color-surface-raised);
+		border-radius: var(--radius-card);
+		box-shadow: var(--shadow-card);
+		border: 1px solid var(--color-line);
+	}
+
+	.card-raised {
+		background: var(--color-surface-raised);
+		border-radius: var(--radius-card);
+		box-shadow: var(--shadow-card-raised);
+		border: 1px solid var(--color-line);
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 0.625rem;
+		font-weight: 500;
+		font-size: 0.875rem;
+		transition:
+			background-color 120ms ease,
+			color 120ms ease,
+			border-color 120ms ease,
+			transform 80ms ease;
+		touch-action: manipulation;
+		user-select: none;
+	}
+	.btn:active {
+		transform: translateY(1px);
+	}
+
+	.btn-primary {
+		background: var(--color-teal-700);
+		color: white;
+	}
+	.btn-primary:hover {
+		background: var(--color-teal-800);
+	}
+
+	.btn-ghost {
+		background: transparent;
+		color: var(--color-ink);
+		border: 1px solid var(--color-line);
+	}
+	.btn-ghost:hover {
+		background: var(--color-teal-50);
+		border-color: var(--color-teal-600);
+	}
+
+	.btn-danger {
+		background: var(--color-coral-600);
+		color: white;
+	}
+	.btn-danger:hover {
+		background: var(--color-coral-700);
+	}
+}

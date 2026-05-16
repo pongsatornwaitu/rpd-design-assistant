@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+	<defs>
+		<linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0%" stop-color="#0f766e" />
+			<stop offset="100%" stop-color="#134e4a" />
+		</linearGradient>
+	</defs>
+	<rect width="512" height="512" rx="96" fill="url(#g)" />
+	<g fill="white" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+		<path
+			d="M128 200 C 128 130, 180 100, 256 100 C 332 100, 384 130, 384 200 C 384 260, 360 320, 320 360 L 192 360 C 152 320, 128 260, 128 200 Z"
+			fill="none"
+			stroke-width="14"
+		/>
+		<circle cx="180" cy="220" r="22" fill="white" />
+		<circle cx="332" cy="220" r="22" fill="white" />
+		<circle cx="216" cy="290" r="18" fill="white" />
+		<circle cx="296" cy="290" r="18" fill="white" />
+		<rect x="156" y="400" width="200" height="40" rx="20" fill="white" />
+	</g>
+	<text
+		x="256"
+		y="430"
+		text-anchor="middle"
+		font-family="system-ui,sans-serif"
+		font-weight="700"
+		font-size="32"
+		fill="#0f766e"
+	>RPD</text>
+</svg>
