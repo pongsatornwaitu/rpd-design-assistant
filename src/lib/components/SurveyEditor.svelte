@@ -18,7 +18,13 @@
 	}
 	let { fdi }: Props = $props();
 
-	const survey = $derived(caseStore.current.teeth[fdi]);
+	// Snapshot pattern: read from plain object (fresh on every revision bump)
+	// to bypass Svelte 5 nested-mutation reactivity quirks where SegmentedControl
+	// props don't update immediately after caseStore.updateSurvey
+	const survey = $derived.by(() => {
+		caseStore.revision;
+		return caseStore.snapshot().teeth[fdi];
+	});
 	const isPresent = $derived(survey.status === 'present');
 
 	const undercutLocationOptions = [

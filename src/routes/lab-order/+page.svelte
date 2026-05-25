@@ -5,11 +5,12 @@
 	import ArchDiagram from '$lib/components/ArchDiagram.svelte';
 	import { base } from '$app/paths';
 
-	const analysis = $derived.by(() => {
+	const snap = $derived.by(() => {
 		caseStore.revision;
-		return analyzeCase(caseStore.current, settings.includeThirdMolars);
+		return caseStore.snapshot();
 	});
-	const current = $derived(caseStore.current);
+	const analysis = $derived(analyzeCase(snap, settings.includeThirdMolars));
+	const current = $derived(snap);
 	const printable = $derived(new Date(current.meta.updatedAt).toLocaleString('th-TH'));
 
 	function doPrint() {

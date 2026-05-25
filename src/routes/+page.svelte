@@ -14,30 +14,30 @@
 	import { onMount } from 'svelte';
 	import { ALL_FDI } from '$lib/types';
 
-	const analysis = $derived.by(() => {
-		caseStore.revision; // force re-evaluation on every state change
-		return analyzeCase(caseStore.current, settings.includeThirdMolars);
+	// Snapshot pattern: take plain JS snapshot tracked by revision
+	// to bypass Svelte 5 deep-proxy nested-mutation reactivity quirks
+	const snap = $derived.by(() => {
+		caseStore.revision;
+		return caseStore.snapshot();
 	});
+
+	const analysis = $derived(analyzeCase(snap, settings.includeThirdMolars));
 
 	let selectedFdi = $state<FDI | null>(null);
 	let isMobile = $state(false);
 
 	const missingCount = $derived.by(() => {
-		caseStore.revision; // force re-evaluation on every state change
 		let n = 0;
-		const teeth = caseStore.current.teeth;
 		for (const fdi of ALL_FDI) {
-			if (teeth[fdi].status === 'missing') n++;
+			if (snap.teeth[fdi].status === 'missing') n++;
 		}
 		return n;
 	});
 
 	const concernCount = $derived.by(() => {
-		caseStore.revision; // force re-evaluation on every state change
 		let n = 0;
-		const teeth = caseStore.current.teeth;
 		for (const fdi of ALL_FDI) {
-			const t = teeth[fdi];
+			const t = snap.teeth[fdi];
 			if (t.status === 'present' && (t.prognosis === 'poor' || t.crownRoot === 'unfavorable' || t.tipped)) {
 				n++;
 			}

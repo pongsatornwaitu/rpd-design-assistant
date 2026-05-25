@@ -23,6 +23,12 @@
 
 	const effectiveFocus = $derived(focusFdi ?? selectedFdi ?? visibleArchOrder[0]);
 
+	// Snapshot pattern — guaranteed fresh on every state change
+	const snap = $derived.by(() => {
+		caseStore.revision;
+		return caseStore.snapshot();
+	});
+
 	const upperRight = $derived(
 		MAXILLARY_FDI.slice(0, 8).filter((f) => settings.includeThirdMolars || !THIRD_MOLARS.has(f))
 	);
@@ -161,7 +167,7 @@
 				<div role="gridcell">
 					<ToothButton
 						{fdi}
-						survey={caseStore.current.teeth[fdi]}
+						survey={snap.teeth[fdi]}
 						focused={effectiveFocus === fdi}
 						selected={selectedFdi === fdi}
 						onclick={(e) => handleClick(fdi, e)}
@@ -175,7 +181,7 @@
 				<div role="gridcell">
 					<ToothButton
 						{fdi}
-						survey={caseStore.current.teeth[fdi]}
+						survey={snap.teeth[fdi]}
 						focused={effectiveFocus === fdi}
 						selected={selectedFdi === fdi}
 						onclick={(e) => handleClick(fdi, e)}
@@ -193,7 +199,7 @@
 				<div role="gridcell">
 					<ToothButton
 						{fdi}
-						survey={caseStore.current.teeth[fdi]}
+						survey={snap.teeth[fdi]}
 						focused={effectiveFocus === fdi}
 						selected={selectedFdi === fdi}
 						onclick={(e) => handleClick(fdi, e)}
@@ -207,7 +213,7 @@
 				<div role="gridcell">
 					<ToothButton
 						{fdi}
-						survey={caseStore.current.teeth[fdi]}
+						survey={snap.teeth[fdi]}
 						focused={effectiveFocus === fdi}
 						selected={selectedFdi === fdi}
 						onclick={(e) => handleClick(fdi, e)}

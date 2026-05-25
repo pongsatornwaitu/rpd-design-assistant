@@ -9,10 +9,11 @@
 	import { base } from '$app/paths';
 	import type { FDI } from '$lib/types';
 
-	const analysis = $derived.by(() => {
+	const snap = $derived.by(() => {
 		caseStore.revision;
-		return analyzeCase(caseStore.current, settings.includeThirdMolars);
+		return caseStore.snapshot();
 	});
+	const analysis = $derived(analyzeCase(snap, settings.includeThirdMolars));
 
 	let currentStep = $state(1);
 	let selectedFdi = $state<FDI | null>(null);
@@ -171,8 +172,8 @@
 				</div>
 			{:else if step.n === 5}
 				<div class="diagrams">
-					<ArchDiagram caseData={caseStore.current} analysis={analysis.maxilla} />
-					<ArchDiagram caseData={caseStore.current} analysis={analysis.mandible} />
+					<ArchDiagram caseData={snap} analysis={analysis.maxilla} />
+					<ArchDiagram caseData={snap} analysis={analysis.mandible} />
 				</div>
 				<div class="result-box">
 					{#each [analysis.maxilla, analysis.mandible] as a (a.arch)}

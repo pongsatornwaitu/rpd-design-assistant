@@ -7,11 +7,12 @@
 	import { base } from '$app/paths';
 	import type { FDI } from '$lib/types';
 
-	const analysis = $derived.by(() => {
-		caseStore.revision; // force re-evaluation on every state change
-		return analyzeCase(caseStore.current);
+	const snap = $derived.by(() => {
+		caseStore.revision;
+		return caseStore.snapshot();
 	});
-	const generatedAt = $derived(new Date(caseStore.current.meta.updatedAt).toLocaleString('th-TH'));
+	const analysis = $derived(analyzeCase(snap));
+	const generatedAt = $derived(new Date(snap.meta.updatedAt).toLocaleString('th-TH'));
 
 	let activeFdi = $state<FDI | null>(null);
 	let interactive = $state(false);
@@ -25,9 +26,9 @@
 	<header class="sheet-head">
 		<div>
 			<p class="eyebrow">Design Sheet</p>
-			<h2>{caseStore.current.meta.title || 'เคสไม่มีชื่อ'}</h2>
-			{#if caseStore.current.meta.patient}
-				<p class="patient">ผู้ป่วย: {caseStore.current.meta.patient}</p>
+			<h2>{snap.meta.title || 'เคสไม่มีชื่อ'}</h2>
+			{#if snap.meta.patient}
+				<p class="patient">ผู้ป่วย: {snap.meta.patient}</p>
 			{/if}
 		</div>
 		<div class="sheet-meta">
@@ -56,14 +57,14 @@
 
 	<div class="diagram-wrap">
 		<ArchDiagram
-			caseData={caseStore.current}
+			caseData={snap}
 			analysis={analysis.maxilla}
 			{interactive}
 			{onToothClick}
 		/>
 		<div class="midline-mark" aria-hidden="true"></div>
 		<ArchDiagram
-			caseData={caseStore.current}
+			caseData={snap}
 			analysis={analysis.mandible}
 			{interactive}
 			{onToothClick}

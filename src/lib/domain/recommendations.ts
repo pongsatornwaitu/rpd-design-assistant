@@ -343,12 +343,12 @@ function claspRecsFor(
 
 		const inEsthetic = isAnterior(r.fdi);
 
-		// ESTHETIC STRATEGY: anterior bounded abutment → cingulum support only, no visible clasp
-		// Direct retention comes from posterior reverse Akers (handled below)
+		// ESTHETIC STRATEGY: anterior bounded abutment → no visible clasp
+		// (the cingulum REST is recommended in the Rests section, not here)
 		if (useEstheticStrategy && inEsthetic && r.role === 'bounded') {
 			recs.push({
-				title: `ฟัน ${r.fdi}: Cingulum rest only — NO visible clasp (esthetic priority)`,
-				detail: `อยู่ใน esthetic zone + ใช้ esthetic strategy → ไม่วาง retentive arm ที่ฟันนี้\n• วาง cingulum rest บน lingual surface (1-1.5 mm deep V-notch) — รองรับ vertical load\n• Direct retention มาจาก reverse Akers บน posterior teeth (${posteriorRetainers.length ? posteriorRetainers.join(', ') : 'ดู Specialized Clasps section'})\n• ${RECIPROCATION_NOTE_ESTHETIC}\n• Alternative: rotational path of insertion (Jackson) ถ้า undercut ≥ 0.5 mm`,
+				title: `ฟัน ${r.fdi}: ไม่มี clasp (esthetic priority)`,
+				detail: `อยู่ใน esthetic zone + ใช้ esthetic strategy → ไม่วาง retentive arm ที่ฟันนี้\n• Direct retention มาจาก reverse Akers บน posterior teeth ${posteriorRetainers.length ? `(${posteriorRetainers.join(', ')})` : '(ดู Specialized Clasps section)'}\n• ${RECIPROCATION_NOTE_ESTHETIC}\n• Cingulum rest จะอยู่ที่ฟันนี้สำหรับ support (ดู Rest seats section)\n• Alternative: rotational path of insertion (Jackson) ถ้า undercut ≥ 0.5 mm`,
 				severity: 'good',
 				references: [REF_MCCRACKEN_DR, REF_PHOENIX]
 			});

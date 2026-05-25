@@ -64,6 +64,12 @@ function createCaseStore() {
 		get revision() {
 			return revision;
 		},
+		/** Take a snapshot of the current state. Use in $derived together with
+		 *  revision to get a plain JS object that reflects the latest values
+		 *  (avoids Svelte 5 deep-proxy nested-mutation reactivity quirks). */
+		snapshot(): CaseData {
+			return snapshot();
+		},
 		get canUndo() {
 			return past.length > 0;
 		},

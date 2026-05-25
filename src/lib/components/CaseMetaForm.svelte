@@ -11,6 +11,12 @@
 		MetalAllergy
 	} from '$lib/types';
 
+	// Snapshot pattern for read-side reactivity
+	const snap = $derived.by(() => {
+		caseStore.revision;
+		return caseStore.snapshot();
+	});
+
 	let showAdvanced = $state(false);
 
 	const occlusionOptions: { value: OcclusionType; label: string }[] = [
@@ -84,7 +90,7 @@
 			<span>ชื่อเคส</span>
 			<input
 				type="text"
-				value={caseStore.current.meta.title}
+				value={snap.meta.title}
 				oninput={(e) =>
 					caseStore.setMeta({ title: (e.currentTarget as HTMLInputElement).value })}
 				placeholder="เคส #1"
@@ -94,7 +100,7 @@
 			<span>ชื่อผู้ป่วย / ID</span>
 			<input
 				type="text"
-				value={caseStore.current.meta.patient}
+				value={snap.meta.patient}
 				oninput={(e) =>
 					caseStore.setMeta({ patient: (e.currentTarget as HTMLInputElement).value })}
 				placeholder="(ไม่ระบุ — ห้ามใส่ข้อมูลส่วนตัวที่ระบุตัวตน)"
@@ -113,7 +119,7 @@
 						min="0"
 						max="25"
 						step="0.5"
-						value={caseStore.current.interarch.anteriorMm}
+						value={snap.interarch.anteriorMm}
 						oninput={(e) =>
 							caseStore.setInterarch({
 								anteriorMm: parseFloat((e.currentTarget as HTMLInputElement).value) || 0
@@ -128,7 +134,7 @@
 						min="0"
 						max="20"
 						step="0.5"
-						value={caseStore.current.interarch.posteriorRightMm}
+						value={snap.interarch.posteriorRightMm}
 						oninput={(e) =>
 							caseStore.setInterarch({
 								posteriorRightMm: parseFloat((e.currentTarget as HTMLInputElement).value) || 0
@@ -143,7 +149,7 @@
 						min="0"
 						max="20"
 						step="0.5"
-						value={caseStore.current.interarch.posteriorLeftMm}
+						value={snap.interarch.posteriorLeftMm}
 						oninput={(e) =>
 							caseStore.setInterarch({
 								posteriorLeftMm: parseFloat((e.currentTarget as HTMLInputElement).value) || 0
@@ -160,7 +166,7 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={caseStore.current.patientFactors.bruxism}
+						checked={snap.patientFactors.bruxism}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								bruxism: (e.currentTarget as HTMLInputElement).checked
@@ -171,7 +177,7 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={caseStore.current.patientFactors.highSmileLine}
+						checked={snap.patientFactors.highSmileLine}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								highSmileLine: (e.currentTarget as HTMLInputElement).checked
@@ -182,7 +188,7 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={caseStore.current.patientFactors.maxillaryTorus}
+						checked={snap.patientFactors.maxillaryTorus}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								maxillaryTorus: (e.currentTarget as HTMLInputElement).checked
@@ -193,7 +199,7 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={caseStore.current.patientFactors.mandibularTori}
+						checked={snap.patientFactors.mandibularTori}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								mandibularTori: (e.currentTarget as HTMLInputElement).checked
@@ -205,7 +211,7 @@
 				<label class="select">
 					<span>Oral hygiene</span>
 					<select
-						value={caseStore.current.patientFactors.oralHygiene}
+						value={snap.patientFactors.oralHygiene}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								oralHygiene: (e.currentTarget as HTMLSelectElement).value as OralHygiene
@@ -220,7 +226,7 @@
 				<label class="select">
 					<span>Occlusion</span>
 					<select
-						value={caseStore.current.patientFactors.occlusion}
+						value={snap.patientFactors.occlusion}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								occlusion: (e.currentTarget as HTMLSelectElement).value as OcclusionType
@@ -235,7 +241,7 @@
 				<label class="select">
 					<span>Skeletal class</span>
 					<select
-						value={caseStore.current.patientFactors.skeletalClass}
+						value={snap.patientFactors.skeletalClass}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								skeletalClass: (e.currentTarget as HTMLSelectElement).value as SkeletalClass
@@ -250,7 +256,7 @@
 				<label class="select">
 					<span>Salivary flow</span>
 					<select
-						value={caseStore.current.patientFactors.salivaryFlow}
+						value={snap.patientFactors.salivaryFlow}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								salivaryFlow: (e.currentTarget as HTMLSelectElement).value as SalivaryFlow
@@ -265,7 +271,7 @@
 				<label class="select">
 					<span>TMJ status</span>
 					<select
-						value={caseStore.current.patientFactors.tmjStatus}
+						value={snap.patientFactors.tmjStatus}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								tmjStatus: (e.currentTarget as HTMLSelectElement).value as TmjStatus
@@ -280,7 +286,7 @@
 				<label class="select">
 					<span>Tongue size</span>
 					<select
-						value={caseStore.current.patientFactors.tongueSize}
+						value={snap.patientFactors.tongueSize}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								tongueSize: (e.currentTarget as HTMLSelectElement).value as TongueSize
@@ -295,7 +301,7 @@
 				<label class="select">
 					<span>Frenum attachment</span>
 					<select
-						value={caseStore.current.patientFactors.frenumAttachment}
+						value={snap.patientFactors.frenumAttachment}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								frenumAttachment: (e.currentTarget as HTMLSelectElement).value as FrenumAttachment
@@ -310,7 +316,7 @@
 				<label class="select">
 					<span>Metal allergy</span>
 					<select
-						value={caseStore.current.patientFactors.metalAllergy}
+						value={snap.patientFactors.metalAllergy}
 						onchange={(e) =>
 							caseStore.setPatientFactors({
 								metalAllergy: (e.currentTarget as HTMLSelectElement).value as MetalAllergy
@@ -328,7 +334,7 @@
 						type="number"
 						min="0"
 						max="120"
-						value={caseStore.current.patientFactors.age}
+						value={snap.patientFactors.age}
 						oninput={(e) =>
 							caseStore.setPatientFactors({
 								age: parseInt((e.currentTarget as HTMLInputElement).value) || 0
