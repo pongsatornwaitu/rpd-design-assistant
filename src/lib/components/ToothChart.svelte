@@ -19,6 +19,7 @@
 	});
 
 	let focusFdi = $state<FDI | null>(null);
+	let mode = $state<'edit' | 'mark'>('mark');
 
 	const effectiveFocus = $derived(focusFdi ?? selectedFdi ?? visibleArchOrder[0]);
 
@@ -36,7 +37,10 @@
 	);
 
 	function activate(fdi: FDI, shiftKey: boolean) {
-		if (shiftKey) caseStore.toggleStatus(fdi);
+		// Mark mode (default): click = toggle missing; Shift+click = open survey
+		// Edit mode: click = open survey; Shift+click = toggle missing
+		const wantsToggle = mode === 'mark' ? !shiftKey : shiftKey;
+		if (wantsToggle) caseStore.toggleStatus(fdi);
 		else onSelect(fdi);
 	}
 
@@ -122,10 +126,34 @@
 >
 	<header class="chart-header">
 		<h2 id="chart-title" class="text-base font-semibold">แผนผังฟัน (FDI)</h2>
-		<p class="hint">
-			แตะ/Enter เพื่อแก้ไข • Shift+คลิก หรือ Del = สลับ มี/หายไป • ลูกศร = เลื่อน
-		</p>
+		<div class="mode-switch" role="group" aria-label="โหมดการคลิก">
+			<button
+				type="button"
+				class="mode-btn"
+				class:active={mode === 'mark'}
+				aria-pressed={mode === 'mark'}
+				onclick={() => (mode = 'mark')}
+			>
+				✗ Mark missing
+			</button>
+			<button
+				type="button"
+				class="mode-btn"
+				class:active={mode === 'edit'}
+				aria-pressed={mode === 'edit'}
+				onclick={() => (mode = 'edit')}
+			>
+				✎ Edit survey
+			</button>
+		</div>
 	</header>
+	<p class="hint">
+		{#if mode === 'mark'}
+			<strong>คลิกฟัน = สลับ มี/หายไป</strong> • Shift+คลิก = เปิด survey • ลูกศร = เลื่อน
+		{:else}
+			<strong>คลิกฟัน = เปิด survey</strong> • Shift+คลิก หรือ Del = สลับ มี/หาย • ลูกศร = เลื่อน
+		{/if}
+	</p>
 
 	<div class="quadrants" role="grid" aria-label="ฟันบน">
 		<div class="quadrant right" role="row">
@@ -213,6 +241,39 @@
 	.hint {
 		font-size: 0.75rem;
 		color: var(--color-ink-muted);
+		margin-bottom: 0.5rem;
+	}
+	.hint strong {
+		color: var(--color-teal-700);
+		font-weight: 600;
+	}
+	.mode-switch {
+		display: inline-flex;
+		gap: 0.25rem;
+		background: var(--color-surface);
+		padding: 0.1875rem;
+		border-radius: 0.5rem;
+		border: 1px solid var(--color-line);
+	}
+	.mode-btn {
+		padding: 0.3125rem 0.625rem;
+		background: transparent;
+		border: 1px solid transparent;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		color: var(--color-ink-muted);
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.mode-btn:hover {
+		color: var(--color-ink);
+	}
+	.mode-btn.active {
+		background: var(--color-surface-raised);
+		color: var(--color-ink);
+		border-color: var(--color-line);
+		box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+		font-weight: 600;
 	}
 	.quadrants {
 		display: grid;

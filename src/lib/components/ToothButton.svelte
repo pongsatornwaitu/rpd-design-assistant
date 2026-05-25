@@ -33,6 +33,9 @@
 	class:selected
 >
 	<span class="fdi">{fdi}</span>
+	{#if missing}
+		<span class="x-mark" aria-hidden="true">✗</span>
+	{/if}
 	{#if survey.tipped}
 		<span class="dot dot-tipped" aria-hidden="true"></span>
 	{/if}
@@ -99,6 +102,19 @@
 	}
 	.fdi {
 		line-height: 1;
+	}
+	.x-mark {
+		position: absolute;
+		font-size: 1.875rem;
+		font-weight: 700;
+		color: var(--color-coral-600);
+		opacity: 0.6;
+		line-height: 1;
+		pointer-events: none;
+		transform: translateY(-1px);
+	}
+	.tooth.missing .fdi {
+		opacity: 0.6;
 	}
 	.dot {
 		position: absolute;

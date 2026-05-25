@@ -65,6 +65,9 @@ export function analyzeEsthetic(
 
 	const tier = determineTier(missingAnteriorCount, missingCanines.length, archEstheticZone.length);
 
+	// Pick representative posterior teeth (max 2: one right, one left) for clasp suggestions
+	const representativePosteriors = pickRepresentativePosteriors(posteriorAbutments);
+
 	return {
 		arch,
 		missingAnteriorCount,
@@ -72,10 +75,31 @@ export function analyzeEsthetic(
 		tier,
 		hasAnteriorAbutment,
 		abutmentsInEstheticZone,
-		posteriorAbutments,
-		...strategyFor(tier, abutmentsInEstheticZone, posteriorAbutments, missingCanines.length),
+		posteriorAbutments: representativePosteriors,
+		...strategyFor(tier, abutmentsInEstheticZone, representativePosteriors, missingCanines.length),
 		references: [REF_STEWART, REF_MCCRACKEN]
 	};
+}
+
+/** Pick most-posterior tooth on each side (max 2 total) — best anchorage for reverse Akers */
+function pickRepresentativePosteriors(allPosteriors: FDI[]): FDI[] {
+	const right = allPosteriors.filter((f) => {
+		const q = Math.floor(f / 10);
+		return q === 1 || q === 4;
+	});
+	const left = allPosteriors.filter((f) => {
+		const q = Math.floor(f / 10);
+		return q === 2 || q === 3;
+	});
+	// "Most posterior" = highest tooth number within quadrant
+	const mostPosterior = (fdis: FDI[]) =>
+		fdis.length === 0 ? null : (fdis.slice().sort((a, b) => (b % 10) - (a % 10))[0] as FDI);
+	const out: FDI[] = [];
+	const r = mostPosterior(right);
+	const l = mostPosterior(left);
+	if (r) out.push(r);
+	if (l) out.push(l);
+	return out;
 }
 
 function determineTier(
@@ -107,14 +131,13 @@ function strategyFor(
 		case 'single-tooth':
 			return {
 				primaryStrategy:
-					'ฟันหน้าหาย 1 ซี่ — พิจารณา **fixed prosthesis** (Maryland bridge, implant, conventional bridge) ก่อน RPD',
+					'ฟันหน้าหาย 1 ซี่ — **Fixed prosthesis แนะนำก่อน RPD**: (1) Implant — ดีที่สุด conservative, (2) Maryland bridge — minimally invasive, (3) Conventional bridge — ถ้า abutments ต้องบูรณะอยู่แล้ว',
 				alternatives: [
-					estheticAbutments.length
-						? `ถ้าเลือกทำ RPD: ใช้ **rotational path of insertion (Jackson)** เพื่อหลีกเลี่ยง clasp ฝั่งหน้า — engage anterior undercut ระหว่างใส่`
-						: 'RPD: lingual cingulum rest บน abutment หน้า + retentive arm จากด้าน lingual เท่านั้น (มองจากด้านหน้าไม่เห็น)',
-					posteriorAbutments.length
-						? `Reverse circumferential clasp บน ${posteriorAbutments.join('/')} engage mesial undercut → ทำหน้าที่ retention + indirect`
-						: 'ถ้าไม่มี posterior abutment — พิจารณา implant-retained partial denture'
+					'ถ้าจำเป็นต้องทำ RPD: ใช้ **rotational path (Jackson)** — anterior pickup, ไม่มี clasp มองเห็น',
+					estheticAbutments.includes(13 as FDI) || estheticAbutments.includes(23 as FDI) || estheticAbutments.includes(33 as FDI) || estheticAbutments.includes(43 as FDI)
+						? 'หรือ I-bar บน canine ข้าง saddle (ถ้ามี undercut + vestibule พอ) — บางจากด้าน gingival approach'
+						: 'หรือ wrought-wire arm บน abutment หน้า (flex ปกปิดได้ดีกว่า cast)',
+					'หลีกเลี่ยง Akers/cast circumferential ที่ canine/incisor — visible เกิน'
 				]
 			};
 
@@ -122,12 +145,13 @@ function strategyFor(
 			return {
 				primaryStrategy:
 					posteriorAbutments.length
-						? `Reverse Akers บน ${posteriorAbutments.join('/')} (engage mesial undercut) + **lingual rest** บน anterior abutments (ไม่ใส่ clasp ที่ฟันหน้า) — esthetic ดี + indirect retention ได้พร้อมกัน`
+						? `Reverse Akers บน ${posteriorAbutments.join(' และ ')} (engage mesial undercut) + **lingual rest** บน anterior abutments (ไม่ใส่ clasp ที่ฟันหน้า) — esthetic ดี + indirect retention ได้พร้อมกัน`
 						: 'ใช้ rotational path of insertion + cingulum rests บน canines/incisors',
 				alternatives: [
 					'I-bar (Roach) บน canine ถัด saddle — gingivally-approaching, มองจากด้านหน้ายาก',
 					'Continuous bar lingual (Kennedy bar) — splint ฟันหน้าทั้งหมด + ทำหน้าที่ indirect retainer',
-					'Extracoronal precision attachment บน abutment — esthetic ดีที่สุด แต่ต้องทำ crown'
+					'Extracoronal precision attachment บน abutment — esthetic ดีที่สุด แต่ต้องทำ crown',
+					'Rotational path of insertion (Jackson) — ทางเลือกที่ดีที่สุดถ้า anterior undercut ≥ 0.5 mm'
 				]
 			};
 
