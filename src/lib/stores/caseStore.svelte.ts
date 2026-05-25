@@ -82,6 +82,16 @@ function createCaseStore() {
 			Object.assign(state.meta, patch);
 			scheduleSave();
 		},
+		setPatientFactors(patch: Partial<CaseData['patientFactors']>) {
+			pushHistory();
+			Object.assign(state.patientFactors, patch);
+			scheduleSave();
+		},
+		setInterarch(patch: Partial<CaseData['interarch']>) {
+			pushHistory();
+			Object.assign(state.interarch, patch);
+			scheduleSave();
+		},
 		undo() {
 			const prev = past.pop();
 			if (!prev) return;

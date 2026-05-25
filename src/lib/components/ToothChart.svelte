@@ -259,7 +259,7 @@
 		height: 0.875rem;
 		border-radius: 0.25rem;
 		border: 1px solid var(--color-line);
-		background: white;
+		background: var(--color-surface-raised);
 	}
 	.sw.striped {
 		background: repeating-linear-gradient(45deg, var(--color-line) 0 3px, transparent 3px 6px);

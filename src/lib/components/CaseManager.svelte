@@ -212,7 +212,7 @@
 		max-width: 24rem;
 		max-height: 24rem;
 		overflow-y: auto;
-		background: white;
+		background: var(--color-surface-raised);
 		border: 1px solid var(--color-line);
 		border-radius: 0.75rem;
 		box-shadow: var(--shadow-card-raised);

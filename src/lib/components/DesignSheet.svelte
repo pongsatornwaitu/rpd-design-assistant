@@ -2,9 +2,20 @@
 	import { caseStore } from '$lib/stores/caseStore.svelte';
 	import { analyzeCase } from '$lib/domain';
 	import ArchDiagram from './ArchDiagram.svelte';
+	import BottomSheet from './BottomSheet.svelte';
+	import SurveyEditor from './SurveyEditor.svelte';
+	import { base } from '$app/paths';
+	import type { FDI } from '$lib/types';
 
 	const analysis = $derived(analyzeCase(caseStore.current));
 	const generatedAt = $derived(new Date(caseStore.current.meta.updatedAt).toLocaleString('th-TH'));
+
+	let activeFdi = $state<FDI | null>(null);
+	let interactive = $state(false);
+
+	function onToothClick(fdi: FDI) {
+		activeFdi = fdi;
+	}
 </script>
 
 <article class="card sheet" aria-label="Design sheet">
@@ -18,16 +29,42 @@
 		</div>
 		<div class="sheet-meta">
 			<p class="ts">อัปเดต: {generatedAt}</p>
-			<button type="button" class="btn btn-ghost" onclick={() => window.print()}>
-				🖨 พิมพ์
-			</button>
+			<div class="sheet-actions">
+				<button
+					type="button"
+					class="btn btn-ghost"
+					class:btn-primary={interactive}
+					onclick={() => (interactive = !interactive)}
+					aria-pressed={interactive}
+				>
+					{interactive ? '👆 Interactive' : '👆 เปิด interactive'}
+				</button>
+				<a href="{base}/lab-order" class="btn btn-ghost">📄 Lab order</a>
+				<button type="button" class="btn btn-ghost" onclick={() => window.print()}>
+					🖨 พิมพ์
+				</button>
+			</div>
 		</div>
 	</header>
 
+	{#if interactive}
+		<p class="hint-interactive">คลิกฟันบนแผนภาพเพื่อแก้ survey โดยตรง · Esc เพื่อปิด</p>
+	{/if}
+
 	<div class="diagram-wrap">
-		<ArchDiagram caseData={caseStore.current} analysis={analysis.maxilla} />
+		<ArchDiagram
+			caseData={caseStore.current}
+			analysis={analysis.maxilla}
+			{interactive}
+			{onToothClick}
+		/>
 		<div class="midline-mark" aria-hidden="true"></div>
-		<ArchDiagram caseData={caseStore.current} analysis={analysis.mandible} />
+		<ArchDiagram
+			caseData={caseStore.current}
+			analysis={analysis.mandible}
+			{interactive}
+			{onToothClick}
+		/>
 	</div>
 
 	<footer class="legend">
@@ -36,8 +73,19 @@
 		<span><i class="sw missing"></i> หายไป</span>
 		<span><i class="sw line"></i> Fulcrum line</span>
 		<span><i class="sw tri"></i> Rest seat</span>
+		<span><i class="sw ir"></i> Indirect retainer</span>
 	</footer>
 </article>
+
+<BottomSheet
+	open={activeFdi !== null}
+	title={activeFdi !== null ? `ฟัน ${activeFdi}` : ''}
+	onclose={() => (activeFdi = null)}
+>
+	{#if activeFdi !== null}
+		<SurveyEditor fdi={activeFdi} />
+	{/if}
+</BottomSheet>
 
 <style>
 	.sheet {
@@ -79,6 +127,19 @@
 	.ts {
 		font-size: 0.75rem;
 		color: var(--color-ink-muted);
+	}
+	.sheet-actions {
+		display: flex;
+		gap: 0.375rem;
+		flex-wrap: wrap;
+	}
+	.hint-interactive {
+		font-size: 0.75rem;
+		color: var(--color-teal-700);
+		padding: 0.5rem 0.75rem;
+		background: var(--color-teal-50);
+		border-inline-start: 3px solid var(--color-teal-600);
+		border-radius: 0.375rem;
 	}
 	.diagram-wrap {
 		display: flex;
@@ -138,6 +199,11 @@
 		border-inline: 5px solid transparent;
 		border-top: 8px solid var(--color-teal-700);
 		border-radius: 0;
+	}
+	.sw.ir {
+		background: transparent;
+		border-style: dashed;
+		border-color: var(--color-coral-500);
 	}
 
 	@media print {

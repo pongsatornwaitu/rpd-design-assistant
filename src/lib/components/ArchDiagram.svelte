@@ -6,8 +6,10 @@
 	interface Props {
 		caseData: CaseData;
 		analysis: ArchAnalysis;
+		interactive?: boolean;
+		onToothClick?: (fdi: FDI) => void;
 	}
-	let { caseData, analysis }: Props = $props();
+	let { caseData, analysis, interactive = false, onToothClick }: Props = $props();
 
 	const positions = $derived(archPositions(analysis.arch));
 	const abutmentSet = $derived(new Set(analysis.abutments));
@@ -20,18 +22,19 @@
 		return 'normal';
 	}
 
+	// Fulcrum line: from actual rest positions per fulcrum analysis
 	const fulcrumPoints = $derived.by(() => {
-		const restAbutments = analysis.spans.flatMap((s) => {
-			const list: FDI[] = [];
-			if (s.rightAbutment) list.push(s.rightAbutment);
-			if (s.leftAbutment) list.push(s.leftAbutment);
-			return list;
-		});
-		const unique = [...new Set(restAbutments)];
-		return unique
+		const restFdis = analysis.fulcrum.definingTeeth;
+		return restFdis
 			.map((fdi) => positions.find((p) => p.fdi === fdi))
 			.filter((p): p is NonNullable<typeof p> => p !== undefined);
 	});
+
+	const indirectPoints = $derived.by(() =>
+		analysis.fulcrum.indirectRetainerPositions
+			.map((fdi) => positions.find((p) => p.fdi === fdi))
+			.filter((p): p is NonNullable<typeof p> => p !== undefined)
+	);
 
 	const archLabel = $derived(analysis.arch === 'maxilla' ? 'ขากรรไกรบน' : 'ขากรรไกรล่าง');
 	const titleId = $derived(`arch-title-${analysis.arch}`);
@@ -61,17 +64,61 @@
 					x2={p.x}
 					y2={p.y}
 					stroke="var(--color-gold-400)"
-					stroke-width="1.5"
-					stroke-dasharray="4 3"
-					opacity="0.7"
-				/>
+					stroke-width="1.8"
+					stroke-dasharray="5 3"
+					opacity="0.85"
+				>
+					<title>Fulcrum line — denture rotates around this axis</title>
+				</line>
 			{/if}
 		{/each}
 	{/if}
 
+	{#each indirectPoints as p (p.fdi + '-ir')}
+		<circle
+			cx={p.x}
+			cy={p.y}
+			r="15"
+			fill="none"
+			stroke="var(--color-coral-500)"
+			stroke-width="1.5"
+			stroke-dasharray="2 2"
+			opacity="0.8"
+		>
+			<title>Indirect retainer position บนฟัน {p.fdi}</title>
+		</circle>
+		<text
+			x={p.x}
+			y={analysis.arch === 'maxilla' ? p.y - 18 : p.y + 22}
+			text-anchor="middle"
+			font-size="7"
+			fill="var(--color-coral-700)"
+			font-family="inherit"
+			font-weight="600"
+		>
+			IR
+		</text>
+	{/each}
+
 	{#each positions as p (p.fdi)}
 		{@const tone = toneOf(p.fdi)}
-		<g class="tooth tone-{tone}">
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+		<g
+			class="tooth tone-{tone}"
+			class:clickable={interactive}
+			role={interactive ? 'button' : 'presentation'}
+			tabindex={interactive ? 0 : -1}
+			aria-label={interactive ? `แก้ไขฟัน ${p.fdi}` : undefined}
+			onclick={interactive && onToothClick ? () => onToothClick(p.fdi) : undefined}
+			onkeydown={interactive && onToothClick
+				? (e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							onToothClick(p.fdi);
+						}
+					}
+				: undefined}
+		>
 			<circle
 				cx={p.x}
 				cy={p.y}
@@ -82,14 +129,14 @@
 						? 'var(--color-teal-100)'
 						: tone === 'concern'
 							? 'var(--color-coral-100)'
-							: 'white'}
+							: 'var(--color-surface-raised)'}
 				stroke={tone === 'abutment'
 					? 'var(--color-teal-600)'
 					: tone === 'concern'
 						? 'var(--color-coral-600)'
 						: tone === 'missing'
 							? 'var(--color-ink-muted)'
-							: 'var(--color-line)'}
+							: 'var(--color-ink-muted)'}
 				stroke-width={tone === 'abutment' ? '2' : '1.5'}
 				stroke-dasharray={tone === 'missing' ? '3 2' : undefined}
 			>
@@ -134,5 +181,19 @@
 		width: 100%;
 		height: auto;
 		display: block;
+	}
+	.tooth.clickable {
+		cursor: pointer;
+	}
+	.tooth.clickable:hover circle:first-child {
+		stroke-width: 2.5;
+		opacity: 0.9;
+	}
+	.tooth.clickable:focus {
+		outline: none;
+	}
+	.tooth.clickable:focus circle:first-child {
+		stroke: var(--color-teal-600);
+		stroke-width: 3;
 	}
 </style>

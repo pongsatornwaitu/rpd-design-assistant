@@ -178,6 +178,32 @@
 						checked={survey.requiresAlteration}
 						onchange={(v) => caseStore.updateSurvey(fdi, { requiresAlteration: v })}
 					/>
+					<ToggleSwitch
+						label="Antagonist supraerupted"
+						hint="ฟันคู่สบขึ้นมา restorative space ลด"
+						checked={survey.supraerupted}
+						onchange={(v) => caseStore.updateSurvey(fdi, { supraerupted: v })}
+					/>
+					<ToggleSwitch
+						label="Surveyed crown ก่อนใช้"
+						hint="ฟันควรทำ crown ก่อนเป็น abutment"
+						checked={survey.surveyedCrown}
+						onchange={(v) => caseStore.updateSurvey(fdi, { surveyedCrown: v })}
+					/>
+				</div>
+
+				<div class="group-body" style="margin-top: 0.875rem">
+					<SegmentedControl
+						label="Mobility (Miller)"
+						value={survey.mobility}
+						options={[
+							{ value: 'none', label: 'ไม่มี', tone: 'good' },
+							{ value: 'grade1', label: 'Grade 1', tone: 'warn' },
+							{ value: 'grade2', label: 'Grade 2', tone: 'warn' },
+							{ value: 'grade3', label: 'Grade 3', tone: 'danger' }
+						]}
+						onchange={(v) => caseStore.updateSurvey(fdi, { mobility: v as 'none' | 'grade1' | 'grade2' | 'grade3' })}
+					/>
 				</div>
 			</section>
 

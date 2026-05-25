@@ -4,6 +4,8 @@
 	import { caseStore } from '$lib/stores/caseStore.svelte';
 	import { onMount } from 'svelte';
 	import UpdatePrompt from '$lib/components/UpdatePrompt.svelte';
+	import KnowledgeModal from '$lib/components/KnowledgeModal.svelte';
+	import { knowledgeStore } from '$lib/stores/knowledgeStore.svelte';
 
 	let { children } = $props();
 
@@ -32,3 +34,4 @@
 <a href="#main" class="visually-hidden">ข้ามไปยังเนื้อหา</a>
 {@render children()}
 <UpdatePrompt />
+<KnowledgeModal entry={knowledgeStore.current} onclose={() => knowledgeStore.close()} />

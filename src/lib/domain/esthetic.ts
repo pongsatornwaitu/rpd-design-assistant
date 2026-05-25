@@ -1,0 +1,175 @@
+import type { CaseData, FDI } from '$lib/types';
+import { CANINES, ESTHETIC_ZONE, isAnterior } from '$lib/types';
+import { archTeeth, type ArchKey, type EdentulousSpan } from './spans';
+
+export type EstheticTier =
+	| 'no-anterior-loss'
+	| 'single-tooth'
+	| 'two-three-teeth'
+	| 'four-teeth'
+	| 'five-plus-teeth'
+	| 'canine-to-canine';
+
+export interface EstheticAnalysis {
+	arch: ArchKey;
+	missingAnteriorCount: number;
+	missingCanines: FDI[];
+	tier: EstheticTier;
+	hasAnteriorAbutment: boolean;
+	abutmentsInEstheticZone: FDI[];
+	posteriorAbutments: FDI[];
+	primaryStrategy: string;
+	alternatives: string[];
+	references: { source: string; page?: string }[];
+}
+
+const REF_STEWART: { source: string; page?: string } = {
+	source: 'Phoenix RD. Stewart\'s Clinical RPD (4th ed., 2008)',
+	page: 'Ch. 7 — Class IV / Anterior bounded design'
+};
+
+const REF_MCCRACKEN: { source: string; page?: string } = {
+	source: "McCracken's RPD (Carr & Brown, 13th ed., 2016)",
+	page: 'Ch. 6 — Direct retainer; Ch. 11 — Specific design considerations'
+};
+
+export function analyzeEsthetic(
+	arch: ArchKey,
+	data: CaseData,
+	spans: EdentulousSpan[],
+	abutments: FDI[]
+): EstheticAnalysis {
+	const archEstheticZone = [...ESTHETIC_ZONE].filter((f) =>
+		arch === 'maxilla' ? f < 30 : f >= 30
+	);
+	const missingAnteriorCount = archEstheticZone.filter(
+		(f) => data.teeth[f as FDI].status === 'missing'
+	).length;
+	const missingCanines: FDI[] = [...CANINES]
+		.filter((f) => (arch === 'maxilla' ? f < 30 : f >= 30))
+		.filter((f) => data.teeth[f as FDI].status === 'missing');
+
+	const abutmentsInEstheticZone = abutments.filter((f) => isAnterior(f));
+	// "Posterior abutments" for esthetic strategy = present posterior teeth eligible
+	// to carry direct retainers (e.g. reverse Akers). These don't need to already be
+	// saddle-adjacent abutments in the Kennedy sense.
+	const archAll = archTeeth(arch, true);
+	const posteriorAbutments = archAll.filter(
+		(f) =>
+			!isAnterior(f) &&
+			data.teeth[f].status === 'present' &&
+			data.teeth[f].prognosis !== 'poor' &&
+			data.teeth[f].crownRoot !== 'unfavorable'
+	);
+	const hasAnteriorAbutment = abutmentsInEstheticZone.length > 0;
+
+	const tier = determineTier(missingAnteriorCount, missingCanines.length, archEstheticZone.length);
+
+	return {
+		arch,
+		missingAnteriorCount,
+		missingCanines,
+		tier,
+		hasAnteriorAbutment,
+		abutmentsInEstheticZone,
+		posteriorAbutments,
+		...strategyFor(tier, abutmentsInEstheticZone, posteriorAbutments, missingCanines.length),
+		references: [REF_STEWART, REF_MCCRACKEN]
+	};
+}
+
+function determineTier(
+	missingCount: number,
+	canineLossCount: number,
+	zoneSize: number
+): EstheticTier {
+	if (missingCount === 0) return 'no-anterior-loss';
+	if (canineLossCount >= 2) return 'canine-to-canine';
+	if (missingCount === 1) return 'single-tooth';
+	if (missingCount <= 3) return 'two-three-teeth';
+	if (missingCount === 4) return 'four-teeth';
+	return 'five-plus-teeth';
+}
+
+function strategyFor(
+	tier: EstheticTier,
+	estheticAbutments: FDI[],
+	posteriorAbutments: FDI[],
+	canineLossCount: number
+): { primaryStrategy: string; alternatives: string[] } {
+	switch (tier) {
+		case 'no-anterior-loss':
+			return {
+				primaryStrategy: 'ไม่มีฟันหน้าที่หาย — ไม่มี esthetic concern ที่ต้องการ design พิเศษ',
+				alternatives: []
+			};
+
+		case 'single-tooth':
+			return {
+				primaryStrategy:
+					'ฟันหน้าหาย 1 ซี่ — พิจารณา **fixed prosthesis** (Maryland bridge, implant, conventional bridge) ก่อน RPD',
+				alternatives: [
+					estheticAbutments.length
+						? `ถ้าเลือกทำ RPD: ใช้ **rotational path of insertion (Jackson)** เพื่อหลีกเลี่ยง clasp ฝั่งหน้า — engage anterior undercut ระหว่างใส่`
+						: 'RPD: lingual cingulum rest บน abutment หน้า + retentive arm จากด้าน lingual เท่านั้น (มองจากด้านหน้าไม่เห็น)',
+					posteriorAbutments.length
+						? `Reverse circumferential clasp บน ${posteriorAbutments.join('/')} engage mesial undercut → ทำหน้าที่ retention + indirect`
+						: 'ถ้าไม่มี posterior abutment — พิจารณา implant-retained partial denture'
+				]
+			};
+
+		case 'two-three-teeth':
+			return {
+				primaryStrategy:
+					posteriorAbutments.length
+						? `Reverse Akers บน ${posteriorAbutments.join('/')} (engage mesial undercut) + **lingual rest** บน anterior abutments (ไม่ใส่ clasp ที่ฟันหน้า) — esthetic ดี + indirect retention ได้พร้อมกัน`
+						: 'ใช้ rotational path of insertion + cingulum rests บน canines/incisors',
+				alternatives: [
+					'I-bar (Roach) บน canine ถัด saddle — gingivally-approaching, มองจากด้านหน้ายาก',
+					'Continuous bar lingual (Kennedy bar) — splint ฟันหน้าทั้งหมด + ทำหน้าที่ indirect retainer',
+					'Extracoronal precision attachment บน abutment — esthetic ดีที่สุด แต่ต้องทำ crown'
+				]
+			};
+
+		case 'four-teeth':
+			return {
+				primaryStrategy:
+					'ฟันหน้าหาย 4 ซี่ — **borderline tooth-supported** เริ่มต้องการ tissue support เพิ่ม: broader major connector + stress-releasing element + indirect retainer ที่ posterior ทั้ง 2 ข้าง',
+				alternatives: [
+					'Reverse Akers หรือ embrasure clasp บน molar/premolar 2 ข้าง',
+					'Maxillary: AP palatal strap หรือ palatal plate (ครอบคลุมมากขึ้นเพื่อ stress distribution)',
+					'Mandibular: lingual plate (ครอบคลุม cingulum + ทำ indirect retainer)',
+					'Continuous bar lingual กับ anterior abutment ที่เหลือ',
+					'พิจารณา rotational path ถ้าเป็น patient esthetic-critical'
+				]
+			};
+
+		case 'five-plus-teeth':
+			return {
+				primaryStrategy:
+					'ฟันหน้าหาย ≥ 5 ซี่ — **ไม่ใช่ tooth-supported อีกต่อไป**: ใช้หลักการ tissue-supported similar ต่อ Class I distal extension; saddle อาศัย ridge support เป็นหลัก',
+				alternatives: [
+					'**RPI clasp** บน premolar ที่ใกล้ saddle ที่สุด — stress-releasing',
+					'Maxillary: **palatal plate** (full coverage) สำหรับ tissue support',
+					'Mandibular: lingual plate + cross-arch stabilization สูง',
+					'Functional impression (altered cast) เพื่อ refine ridge contact',
+					'พิจารณา **complete denture, overdenture** หรือ **implant-supported** เป็นทางเลือก'
+				]
+			};
+
+		case 'canine-to-canine':
+			return {
+				primaryStrategy:
+					'**Canine หายทั้งคู่** — เปลี่ยน paradigm ทั้งหมด: incisors เหลือไม่ใช่ abutment ที่ดี (รากเล็ก, C:R unfavorable). ใช้ premolar/molar เป็น primary abutments เท่านั้น',
+				alternatives: [
+					'หลีกเลี่ยงใช้ incisors เหลือเป็น direct retainer — ใช้แค่ rest support เบาๆ',
+					'RPI clasp บน premolar ทั้ง 2 ข้าง',
+					'Broader major connector (palatal plate / lingual plate)',
+					'พิจารณา **implant ที่ canine position** เพื่อสร้าง cornerstone abutment',
+					canineLossCount === 2 ? '(canine หายทั้ง 2 ข้าง — แนะนำ implant อย่างยิ่ง)' : ''
+				].filter(Boolean)
+			};
+	}
+}
+
+export const ESTHETIC_REFERENCES = [REF_STEWART, REF_MCCRACKEN];

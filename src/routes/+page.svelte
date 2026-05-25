@@ -6,6 +6,7 @@
 	import DesignSheet from '$lib/components/DesignSheet.svelte';
 	import CaseMetaForm from '$lib/components/CaseMetaForm.svelte';
 	import BottomSheet from '$lib/components/BottomSheet.svelte';
+	import MaterialsPanel from '$lib/components/MaterialsPanel.svelte';
 	import { caseStore } from '$lib/stores/caseStore.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import { analyzeCase } from '$lib/domain';
@@ -77,6 +78,8 @@
 			<AnalysisPanel analysis={analysis.maxilla} title="ขากรรไกรบน" />
 			<AnalysisPanel analysis={analysis.mandible} title="ขากรรไกรล่าง" />
 		</div>
+
+		<MaterialsPanel materials={analysis.materials} />
 	</div>
 
 	{#if !isMobile}

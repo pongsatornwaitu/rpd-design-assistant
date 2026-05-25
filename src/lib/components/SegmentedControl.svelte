@@ -96,10 +96,10 @@
 	}
 	.seg-btn:hover {
 		color: var(--color-ink);
-		background: white;
+		background: var(--color-surface-raised);
 	}
 	.seg-btn.selected {
-		background: white;
+		background: var(--color-surface-raised);
 		color: var(--color-ink);
 		border-color: var(--color-line);
 		box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);

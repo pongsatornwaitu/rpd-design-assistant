@@ -90,6 +90,9 @@
 			</section>
 
 			<footer class="menu-footer">
+				<a href="{base}/learn" class="link">📚 โหมดเรียนรู้แบบขั้นตอน →</a>
+				<a href="{base}/compare" class="link">🔀 เปรียบเทียบ scenarios →</a>
+				<a href="{base}/lab-order" class="link">📄 Lab work order →</a>
 				<a href="{base}/about" class="link">เกี่ยวกับ + อ้างอิง →</a>
 			</footer>
 		</div>
@@ -190,6 +193,9 @@
 	.menu-footer {
 		border-top: 1px solid var(--color-line);
 		padding-top: 0.625rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
 	}
 	.link {
 		font-size: 0.8125rem;

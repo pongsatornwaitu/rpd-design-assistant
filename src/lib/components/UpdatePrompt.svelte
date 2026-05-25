@@ -66,7 +66,7 @@
 		align-items: center;
 		gap: 0.625rem;
 		padding: 0.625rem 1rem;
-		background: white;
+		background: var(--color-surface-raised);
 		border: 1px solid var(--color-line);
 		border-radius: 999px;
 		box-shadow: var(--shadow-card-raised);

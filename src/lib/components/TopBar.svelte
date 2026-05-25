@@ -69,7 +69,7 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 1rem 1.25rem;
-		background: rgba(255, 255, 255, 0.85);
+		background: var(--color-glass);
 		backdrop-filter: saturate(150%) blur(10px);
 		border-bottom: 1px solid var(--color-line);
 		position: sticky;
