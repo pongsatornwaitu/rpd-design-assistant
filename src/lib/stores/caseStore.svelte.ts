@@ -24,6 +24,11 @@ function writeStorage(data: CaseData) {
 	}
 }
 
+/** Subscribe to case-store changes — fires after every mutation.
+ *  Use when Svelte 5 fine-grained reactivity is unreliable (e.g., cross-module
+ *  $state access through getters that may be optimized away by the compiler). */
+export const caseEvents = new EventTarget();
+
 function createCaseStore() {
 	let state = $state<CaseData>(readStorage() ?? emptyCase());
 	const past: CaseData[] = [];
@@ -34,6 +39,9 @@ function createCaseStore() {
 
 	function bump() {
 		revision++;
+		// Belt-and-suspenders: also dispatch a DOM event so components that
+		// can't reliably subscribe to revision via Svelte $effect get notified.
+		caseEvents.dispatchEvent(new Event('change'));
 	}
 
 	function snapshot(): CaseData {

@@ -5,7 +5,7 @@
 	import SettingsMenu from './SettingsMenu.svelte';
 
 	// Build identifier — visible so user can verify they're on the latest deploy
-	const BUILD_ID = '4d5ee7b-snapshot';
+	const BUILD_ID = '3cc5404-event';
 
 	const savedLabel = $derived.by(() => {
 		const t = caseStore.lastSavedAt;

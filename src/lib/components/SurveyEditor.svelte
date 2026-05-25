@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { caseStore } from '$lib/stores/caseStore.svelte';
+	import { caseStore, caseEvents } from '$lib/stores/caseStore.svelte';
 	import { labels } from '$lib/i18n/labels';
 	import type {
 		FDI,
@@ -14,15 +14,17 @@
 	import SegmentedControl from './SegmentedControl.svelte';
 	import ToggleSwitch from './ToggleSwitch.svelte';
 	import NumericInput from './NumericInput.svelte';
+	import { onMount } from 'svelte';
 
 	interface Props {
 		fdi: FDI;
 	}
 	let { fdi }: Props = $props();
 
-	// Local mirror state — guarantees immediate UI feedback when user clicks.
-	// We don't rely on $derived from caseStore because Svelte 5 nested-proxy
-	// reactivity is unreliable through getter wrappers across modules.
+	// Local mirror state — guarantees IMMEDIATE UI feedback regardless of
+	// Svelte's deep-proxy reactivity quirks. We update local state DIRECTLY
+	// on each click (instant UI), then forward to the store. A DOM event
+	// listener handles external changes (undo/redo, load, other components).
 	let status = $state<'present' | 'missing'>('present');
 	let undercutLocation = $state<UndercutLocation>('none');
 	let undercutDepthMm = $state(0);
@@ -39,9 +41,7 @@
 	let spacingDistal = $state<SpacingType>('none');
 	let notes = $state('');
 
-	// Sync FROM store — runs whenever fdi changes or store revision bumps
-	$effect(() => {
-		void caseStore.revision; // explicit dependency on store changes
+	function syncFromStore() {
 		const s = caseStore.snapshot().teeth[fdi];
 		status = s.status;
 		undercutLocation = s.undercutLocation;
@@ -58,12 +58,45 @@
 		spacingMesial = s.spacingMesial;
 		spacingDistal = s.spacingDistal;
 		notes = s.notes;
+	}
+
+	// Re-sync when the selected tooth changes
+	$effect(() => {
+		void fdi;
+		syncFromStore();
+	});
+
+	// External changes (undo/redo, load) → re-sync via DOM event
+	onMount(() => {
+		caseEvents.addEventListener('change', syncFromStore);
+		return () => caseEvents.removeEventListener('change', syncFromStore);
 	});
 
 	const isPresent = $derived(status === 'present');
 
-	// Helper: update store + immediately update local state (for instant UI)
+	// Update helper: write to BOTH local state (instant UI) and store
+	// (persistence + analysis recompute). Even if event sync lags, the UI
+	// reflects the click immediately because local $state was set first.
 	function update<K extends keyof ToothSurvey>(key: K, value: ToothSurvey[K]) {
+		// 1. Set local state immediately for instant UI feedback
+		switch (key) {
+			case 'status': status = value as 'present' | 'missing'; break;
+			case 'undercutLocation': undercutLocation = value as UndercutLocation; break;
+			case 'undercutDepthMm': undercutDepthMm = value as number; break;
+			case 'guidePlane': guidePlane = value as GuidePlane; break;
+			case 'vestibuleMm': vestibuleMm = value as number; break;
+			case 'prognosis': prognosis = value as Prognosis; break;
+			case 'crownRoot': crownRoot = value as CrownRoot; break;
+			case 'mobility': mobility = value as Mobility; break;
+			case 'tipped': tipped = value as boolean; break;
+			case 'requiresAlteration': requiresAlteration = value as boolean; break;
+			case 'supraerupted': supraerupted = value as boolean; break;
+			case 'surveyedCrown': surveyedCrown = value as boolean; break;
+			case 'spacingMesial': spacingMesial = value as SpacingType; break;
+			case 'spacingDistal': spacingDistal = value as SpacingType; break;
+			case 'notes': notes = value as string; break;
+		}
+		// 2. Persist to store (which triggers analysis recompute)
 		caseStore.updateSurvey(fdi, { [key]: value } as Partial<ToothSurvey>);
 	}
 
