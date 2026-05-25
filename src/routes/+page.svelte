@@ -12,22 +12,34 @@
 	import { analyzeCase } from '$lib/domain';
 	import type { FDI } from '$lib/types';
 	import { onMount } from 'svelte';
+	import { ALL_FDI } from '$lib/types';
 
 	const analysis = $derived(analyzeCase(caseStore.current, settings.includeThirdMolars));
 
 	let selectedFdi = $state<FDI | null>(null);
 	let isMobile = $state(false);
 
-	const missingCount = $derived(
-		Object.values(caseStore.current.teeth).filter((t) => t.status === 'missing').length
-	);
-	const concernCount = $derived(
-		Object.values(caseStore.current.teeth).filter(
-			(t) =>
-				t.status === 'present' &&
-				(t.prognosis === 'poor' || t.crownRoot === 'unfavorable' || t.tipped)
-		).length
-	);
+	// Explicit iteration ensures Svelte 5 proxy tracks every tooth's status access
+	const missingCount = $derived.by(() => {
+		let n = 0;
+		const teeth = caseStore.current.teeth;
+		for (const fdi of ALL_FDI) {
+			if (teeth[fdi].status === 'missing') n++;
+		}
+		return n;
+	});
+
+	const concernCount = $derived.by(() => {
+		let n = 0;
+		const teeth = caseStore.current.teeth;
+		for (const fdi of ALL_FDI) {
+			const t = teeth[fdi];
+			if (t.status === 'present' && (t.prognosis === 'poor' || t.crownRoot === 'unfavorable' || t.tipped)) {
+				n++;
+			}
+		}
+		return n;
+	});
 
 	onMount(() => {
 		const mq = window.matchMedia('(max-width: 880px)');
