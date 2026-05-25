@@ -25,6 +25,24 @@
 		{ value: 'learning', label: 'การเรียน', hint: 'แสดงเหตุผล + อ้างอิง' },
 		{ value: 'practice', label: 'การทำงาน', hint: 'แสดงผลแบบกระชับ' }
 	];
+
+	async function clearCacheAndReload() {
+		if (!confirm('ล้าง cache + service worker + reload หน้าเว็บ?')) return;
+		try {
+			if ('serviceWorker' in navigator) {
+				const regs = await navigator.serviceWorker.getRegistrations();
+				await Promise.all(regs.map((r) => r.unregister()));
+			}
+			if ('caches' in window) {
+				const keys = await caches.keys();
+				await Promise.all(keys.map((k) => caches.delete(k)));
+			}
+		} catch (e) {
+			console.warn('Clear cache error', e);
+		}
+		// Hard reload bypassing cache
+		window.location.reload();
+	}
 </script>
 
 <div class="settings" bind:this={panelEl}>
@@ -94,6 +112,9 @@
 				<a href="{base}/compare" class="link">🔀 เปรียบเทียบ scenarios →</a>
 				<a href="{base}/lab-order" class="link">📄 Lab work order →</a>
 				<a href="{base}/about" class="link">เกี่ยวกับ + อ้างอิง →</a>
+				<button type="button" class="link link-btn" onclick={clearCacheAndReload}>
+					♻ ล้าง cache + reload (ใช้เมื่อหน้าค้าง)
+				</button>
 			</footer>
 		</div>
 	{/if}
@@ -201,8 +222,20 @@
 		font-size: 0.8125rem;
 		color: var(--color-teal-700);
 		text-decoration: none;
+		background: transparent;
+		border: none;
+		padding: 0;
+		font-family: inherit;
+		text-align: left;
+		cursor: pointer;
 	}
 	.link:hover {
 		text-decoration: underline;
+	}
+	.link-btn {
+		color: var(--color-coral-600);
+		margin-top: 0.25rem;
+		padding-top: 0.375rem;
+		border-top: 1px dashed var(--color-line);
 	}
 </style>

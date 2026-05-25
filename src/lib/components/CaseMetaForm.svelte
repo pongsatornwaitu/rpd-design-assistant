@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { caseStore } from '$lib/stores/caseStore.svelte';
+	import { caseStore, caseEvents } from '$lib/stores/caseStore.svelte';
+	import { onMount } from 'svelte';
 	import type {
+		CaseData,
 		OcclusionType,
 		OralHygiene,
 		SalivaryFlow,
@@ -11,13 +13,92 @@
 		MetalAllergy
 	} from '$lib/types';
 
-	// Snapshot pattern for read-side reactivity
-	const snap = $derived.by(() => {
-		caseStore.revision;
-		return caseStore.snapshot();
+	let showAdvanced = $state(false);
+
+	// Local mirror state — instant UI feedback on click/typing without
+	// relying on Svelte 5 cross-module proxy reactivity
+	let metaTitle = $state('');
+	let metaPatient = $state('');
+	let anteriorMm = $state(10);
+	let posteriorRightMm = $state(7);
+	let posteriorLeftMm = $state(7);
+	let bruxism = $state(false);
+	let highSmileLine = $state(false);
+	let maxillaryTorus = $state(false);
+	let mandibularTori = $state(false);
+	let oralHygiene = $state<OralHygiene>('good');
+	let occlusion = $state<OcclusionType>('normal');
+	let skeletalClass = $state<SkeletalClass>('class1');
+	let salivaryFlow = $state<SalivaryFlow>('normal');
+	let tmjStatus = $state<TmjStatus>('normal');
+	let tongueSize = $state<TongueSize>('normal');
+	let frenumAttachment = $state<FrenumAttachment>('normal');
+	let metalAllergy = $state<MetalAllergy>('none');
+	let age = $state(50);
+
+	function syncFromStore() {
+		const s = caseStore.snapshot();
+		metaTitle = s.meta.title;
+		metaPatient = s.meta.patient;
+		anteriorMm = s.interarch.anteriorMm;
+		posteriorRightMm = s.interarch.posteriorRightMm;
+		posteriorLeftMm = s.interarch.posteriorLeftMm;
+		bruxism = s.patientFactors.bruxism;
+		highSmileLine = s.patientFactors.highSmileLine;
+		maxillaryTorus = s.patientFactors.maxillaryTorus;
+		mandibularTori = s.patientFactors.mandibularTori;
+		oralHygiene = s.patientFactors.oralHygiene;
+		occlusion = s.patientFactors.occlusion;
+		skeletalClass = s.patientFactors.skeletalClass;
+		salivaryFlow = s.patientFactors.salivaryFlow;
+		tmjStatus = s.patientFactors.tmjStatus;
+		tongueSize = s.patientFactors.tongueSize;
+		frenumAttachment = s.patientFactors.frenumAttachment;
+		metalAllergy = s.patientFactors.metalAllergy;
+		age = s.patientFactors.age;
+	}
+
+	syncFromStore(); // initial
+
+	onMount(() => {
+		caseEvents.addEventListener('change', syncFromStore);
+		return () => caseEvents.removeEventListener('change', syncFromStore);
 	});
 
-	let showAdvanced = $state(false);
+	function setMeta(patch: Partial<CaseData['meta']>) {
+		if ('title' in patch && patch.title !== undefined) metaTitle = patch.title;
+		if ('patient' in patch && patch.patient !== undefined) metaPatient = patch.patient;
+		setMeta(patch);
+	}
+
+	function setInterarch(patch: Partial<CaseData['interarch']>) {
+		if ('anteriorMm' in patch && patch.anteriorMm !== undefined) anteriorMm = patch.anteriorMm;
+		if ('posteriorRightMm' in patch && patch.posteriorRightMm !== undefined)
+			posteriorRightMm = patch.posteriorRightMm;
+		if ('posteriorLeftMm' in patch && patch.posteriorLeftMm !== undefined)
+			posteriorLeftMm = patch.posteriorLeftMm;
+		setInterarch(patch);
+	}
+
+	function setPatient(patch: Partial<CaseData['patientFactors']>) {
+		if ('bruxism' in patch && patch.bruxism !== undefined) bruxism = patch.bruxism;
+		if ('highSmileLine' in patch && patch.highSmileLine !== undefined)
+			highSmileLine = patch.highSmileLine;
+		if ('maxillaryTorus' in patch && patch.maxillaryTorus !== undefined)
+			maxillaryTorus = patch.maxillaryTorus;
+		if ('mandibularTori' in patch && patch.mandibularTori !== undefined)
+			mandibularTori = patch.mandibularTori;
+		if (patch.oralHygiene) oralHygiene = patch.oralHygiene;
+		if (patch.occlusion) occlusion = patch.occlusion;
+		if (patch.skeletalClass) skeletalClass = patch.skeletalClass;
+		if (patch.salivaryFlow) salivaryFlow = patch.salivaryFlow;
+		if (patch.tmjStatus) tmjStatus = patch.tmjStatus;
+		if (patch.tongueSize) tongueSize = patch.tongueSize;
+		if (patch.frenumAttachment) frenumAttachment = patch.frenumAttachment;
+		if (patch.metalAllergy) metalAllergy = patch.metalAllergy;
+		if ('age' in patch && patch.age !== undefined) age = patch.age;
+		setPatient(patch);
+	}
 
 	const occlusionOptions: { value: OcclusionType; label: string }[] = [
 		{ value: 'normal', label: 'ปกติ' },
@@ -90,9 +171,9 @@
 			<span>ชื่อเคส</span>
 			<input
 				type="text"
-				value={snap.meta.title}
+				value={metaTitle}
 				oninput={(e) =>
-					caseStore.setMeta({ title: (e.currentTarget as HTMLInputElement).value })}
+					setMeta({ title: (e.currentTarget as HTMLInputElement).value })}
 				placeholder="เคส #1"
 			/>
 		</label>
@@ -100,9 +181,9 @@
 			<span>ชื่อผู้ป่วย / ID</span>
 			<input
 				type="text"
-				value={snap.meta.patient}
+				value={metaPatient}
 				oninput={(e) =>
-					caseStore.setMeta({ patient: (e.currentTarget as HTMLInputElement).value })}
+					setMeta({ patient: (e.currentTarget as HTMLInputElement).value })}
 				placeholder="(ไม่ระบุ — ห้ามใส่ข้อมูลส่วนตัวที่ระบุตัวตน)"
 			/>
 		</label>
@@ -119,9 +200,9 @@
 						min="0"
 						max="25"
 						step="0.5"
-						value={snap.interarch.anteriorMm}
+						value={anteriorMm}
 						oninput={(e) =>
-							caseStore.setInterarch({
+							setInterarch({
 								anteriorMm: parseFloat((e.currentTarget as HTMLInputElement).value) || 0
 							})}
 					/>
@@ -134,9 +215,9 @@
 						min="0"
 						max="20"
 						step="0.5"
-						value={snap.interarch.posteriorRightMm}
+						value={posteriorRightMm}
 						oninput={(e) =>
-							caseStore.setInterarch({
+							setInterarch({
 								posteriorRightMm: parseFloat((e.currentTarget as HTMLInputElement).value) || 0
 							})}
 					/>
@@ -149,9 +230,9 @@
 						min="0"
 						max="20"
 						step="0.5"
-						value={snap.interarch.posteriorLeftMm}
+						value={posteriorLeftMm}
 						oninput={(e) =>
-							caseStore.setInterarch({
+							setInterarch({
 								posteriorLeftMm: parseFloat((e.currentTarget as HTMLInputElement).value) || 0
 							})}
 					/>
@@ -166,9 +247,9 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={snap.patientFactors.bruxism}
+						checked={bruxism}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								bruxism: (e.currentTarget as HTMLInputElement).checked
 							})}
 					/>
@@ -177,9 +258,9 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={snap.patientFactors.highSmileLine}
+						checked={highSmileLine}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								highSmileLine: (e.currentTarget as HTMLInputElement).checked
 							})}
 					/>
@@ -188,9 +269,9 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={snap.patientFactors.maxillaryTorus}
+						checked={maxillaryTorus}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								maxillaryTorus: (e.currentTarget as HTMLInputElement).checked
 							})}
 					/>
@@ -199,9 +280,9 @@
 				<label class="check">
 					<input
 						type="checkbox"
-						checked={snap.patientFactors.mandibularTori}
+						checked={mandibularTori}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								mandibularTori: (e.currentTarget as HTMLInputElement).checked
 							})}
 					/>
@@ -211,9 +292,9 @@
 				<label class="select">
 					<span>Oral hygiene</span>
 					<select
-						value={snap.patientFactors.oralHygiene}
+						value={oralHygiene}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								oralHygiene: (e.currentTarget as HTMLSelectElement).value as OralHygiene
 							})}
 					>
@@ -226,9 +307,9 @@
 				<label class="select">
 					<span>Occlusion</span>
 					<select
-						value={snap.patientFactors.occlusion}
+						value={occlusion}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								occlusion: (e.currentTarget as HTMLSelectElement).value as OcclusionType
 							})}
 					>
@@ -241,9 +322,9 @@
 				<label class="select">
 					<span>Skeletal class</span>
 					<select
-						value={snap.patientFactors.skeletalClass}
+						value={skeletalClass}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								skeletalClass: (e.currentTarget as HTMLSelectElement).value as SkeletalClass
 							})}
 					>
@@ -256,9 +337,9 @@
 				<label class="select">
 					<span>Salivary flow</span>
 					<select
-						value={snap.patientFactors.salivaryFlow}
+						value={salivaryFlow}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								salivaryFlow: (e.currentTarget as HTMLSelectElement).value as SalivaryFlow
 							})}
 					>
@@ -271,9 +352,9 @@
 				<label class="select">
 					<span>TMJ status</span>
 					<select
-						value={snap.patientFactors.tmjStatus}
+						value={tmjStatus}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								tmjStatus: (e.currentTarget as HTMLSelectElement).value as TmjStatus
 							})}
 					>
@@ -286,9 +367,9 @@
 				<label class="select">
 					<span>Tongue size</span>
 					<select
-						value={snap.patientFactors.tongueSize}
+						value={tongueSize}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								tongueSize: (e.currentTarget as HTMLSelectElement).value as TongueSize
 							})}
 					>
@@ -301,9 +382,9 @@
 				<label class="select">
 					<span>Frenum attachment</span>
 					<select
-						value={snap.patientFactors.frenumAttachment}
+						value={frenumAttachment}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								frenumAttachment: (e.currentTarget as HTMLSelectElement).value as FrenumAttachment
 							})}
 					>
@@ -316,9 +397,9 @@
 				<label class="select">
 					<span>Metal allergy</span>
 					<select
-						value={snap.patientFactors.metalAllergy}
+						value={metalAllergy}
 						onchange={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								metalAllergy: (e.currentTarget as HTMLSelectElement).value as MetalAllergy
 							})}
 					>
@@ -334,9 +415,9 @@
 						type="number"
 						min="0"
 						max="120"
-						value={snap.patientFactors.age}
+						value={age}
 						oninput={(e) =>
-							caseStore.setPatientFactors({
+							setPatient({
 								age: parseInt((e.currentTarget as HTMLInputElement).value) || 0
 							})}
 					/>
