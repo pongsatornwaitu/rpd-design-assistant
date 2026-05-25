@@ -4,6 +4,9 @@
 	import CaseManager from './CaseManager.svelte';
 	import SettingsMenu from './SettingsMenu.svelte';
 
+	// Build identifier — visible so user can verify they're on the latest deploy
+	const BUILD_ID = '4d5ee7b-snapshot';
+
 	const savedLabel = $derived.by(() => {
 		const t = caseStore.lastSavedAt;
 		if (!t) return 'ยังไม่ได้บันทึก';
@@ -18,7 +21,7 @@
 	<a href="{base}/" class="brand" aria-label="กลับหน้าหลัก">
 		<span class="logo" aria-hidden="true">RPD</span>
 		<div>
-			<span class="title">RPD Design Assistant</span>
+			<span class="title">RPD Design Assistant <span class="build-id" title="Build identifier">{BUILD_ID}</span></span>
 			<span class="subtitle">ผู้ช่วยออกแบบฟันปลอมถอดได้บางส่วน</span>
 		</div>
 	</a>
@@ -86,6 +89,15 @@
 	.title,
 	.subtitle {
 		display: block;
+	}
+	.build-id {
+		display: inline-block;
+		font-size: 0.6rem;
+		font-weight: 400;
+		color: var(--color-ink-muted);
+		opacity: 0.6;
+		font-family: ui-monospace, monospace;
+		margin-inline-start: 0.25rem;
 	}
 	.logo {
 		display: inline-flex;
