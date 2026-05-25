@@ -4,6 +4,10 @@
 
 	let available = $state(false);
 	let waiting: ServiceWorker | null = null;
+	// Only auto-reload when the user EXPLICITLY clicked "รีเฟรช" — otherwise
+	// a fresh SW activation on initial load would trigger reload, which would
+	// register a fresh SW, fire controllerchange again → infinite loop.
+	let userTriggeredUpdate = false;
 
 	onMount(async () => {
 		if (!('serviceWorker' in navigator)) return;
@@ -28,10 +32,11 @@
 				});
 			});
 
-			let refreshing = false;
 			navigator.serviceWorker.addEventListener('controllerchange', () => {
-				if (refreshing) return;
-				refreshing = true;
+				// Guard: only reload if the user explicitly asked for an update.
+				// Without this guard, any SW activation (e.g., initial install with
+				// skipWaiting) would loop the page forever.
+				if (!userTriggeredUpdate) return;
 				window.location.reload();
 			});
 		} catch (e) {
@@ -40,6 +45,7 @@
 	});
 
 	function applyUpdate() {
+		userTriggeredUpdate = true;
 		waiting?.postMessage({ type: 'SKIP_WAITING' });
 	}
 

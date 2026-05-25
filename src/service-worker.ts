@@ -16,8 +16,10 @@ sw.addEventListener('install', (event) => {
 		(async () => {
 			const cache = await caches.open(CACHE);
 			await cache.addAll(ASSETS);
-			// Skip waiting so the new SW activates immediately
-			await sw.skipWaiting();
+			// NOTE: do NOT call skipWaiting() here — combined with the controllerchange
+			// auto-reload in UpdatePrompt this caused an infinite reload loop. Let the
+			// user click the "รีเฟรช" button in the update prompt instead, which posts
+			// SKIP_WAITING via message and triggers a single controlled reload.
 		})()
 	);
 });
