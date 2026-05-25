@@ -7,7 +7,9 @@
 		GuidePlane,
 		Prognosis,
 		CrownRoot,
-		SpacingType
+		SpacingType,
+		Mobility,
+		ToothSurvey
 	} from '$lib/types';
 	import SegmentedControl from './SegmentedControl.svelte';
 	import ToggleSwitch from './ToggleSwitch.svelte';
@@ -18,14 +20,52 @@
 	}
 	let { fdi }: Props = $props();
 
-	// Snapshot pattern: read from plain object (fresh on every revision bump)
-	// to bypass Svelte 5 nested-mutation reactivity quirks where SegmentedControl
-	// props don't update immediately after caseStore.updateSurvey
-	const survey = $derived.by(() => {
-		caseStore.revision;
-		return caseStore.snapshot().teeth[fdi];
+	// Local mirror state — guarantees immediate UI feedback when user clicks.
+	// We don't rely on $derived from caseStore because Svelte 5 nested-proxy
+	// reactivity is unreliable through getter wrappers across modules.
+	let status = $state<'present' | 'missing'>('present');
+	let undercutLocation = $state<UndercutLocation>('none');
+	let undercutDepthMm = $state(0);
+	let guidePlane = $state<GuidePlane>('adequate');
+	let vestibuleMm = $state(10);
+	let prognosis = $state<Prognosis>('good');
+	let crownRoot = $state<CrownRoot>('favorable');
+	let mobility = $state<Mobility>('none');
+	let tipped = $state(false);
+	let requiresAlteration = $state(false);
+	let supraerupted = $state(false);
+	let surveyedCrown = $state(false);
+	let spacingMesial = $state<SpacingType>('none');
+	let spacingDistal = $state<SpacingType>('none');
+	let notes = $state('');
+
+	// Sync FROM store — runs whenever fdi changes or store revision bumps
+	$effect(() => {
+		void caseStore.revision; // explicit dependency on store changes
+		const s = caseStore.snapshot().teeth[fdi];
+		status = s.status;
+		undercutLocation = s.undercutLocation;
+		undercutDepthMm = s.undercutDepthMm;
+		guidePlane = s.guidePlane;
+		vestibuleMm = s.vestibuleMm;
+		prognosis = s.prognosis;
+		crownRoot = s.crownRoot;
+		mobility = s.mobility;
+		tipped = s.tipped;
+		requiresAlteration = s.requiresAlteration;
+		supraerupted = s.supraerupted;
+		surveyedCrown = s.surveyedCrown;
+		spacingMesial = s.spacingMesial;
+		spacingDistal = s.spacingDistal;
+		notes = s.notes;
 	});
-	const isPresent = $derived(survey.status === 'present');
+
+	const isPresent = $derived(status === 'present');
+
+	// Helper: update store + immediately update local state (for instant UI)
+	function update<K extends keyof ToothSurvey>(key: K, value: ToothSurvey[K]) {
+		caseStore.updateSurvey(fdi, { [key]: value } as Partial<ToothSurvey>);
+	}
 
 	const undercutLocationOptions = [
 		{ value: 'none' as const, label: labels.undercutLocation.none },
@@ -64,16 +104,8 @@
 
 	const crownRootOptions = [
 		{ value: 'favorable' as const, label: labels.crownRoot.favorable, tone: 'good' as const },
-		{
-			value: 'borderline' as const,
-			label: labels.crownRoot.borderline,
-			tone: 'warn' as const
-		},
-		{
-			value: 'unfavorable' as const,
-			label: labels.crownRoot.unfavorable,
-			tone: 'danger' as const
-		}
+		{ value: 'borderline' as const, label: labels.crownRoot.borderline, tone: 'warn' as const },
+		{ value: 'unfavorable' as const, label: labels.crownRoot.unfavorable, tone: 'danger' as const }
 	];
 
 	const spacingOptions = [
@@ -82,6 +114,13 @@
 		{ value: 'drift' as const, label: labels.spacing.drift, tone: 'warn' as const },
 		{ value: 'foodTrap' as const, label: labels.spacing.foodTrap, tone: 'warn' as const },
 		{ value: 'esthetic' as const, label: labels.spacing.esthetic, tone: 'warn' as const }
+	];
+
+	const mobilityOptions = [
+		{ value: 'none' as const, label: 'ไม่มี', tone: 'good' as const },
+		{ value: 'grade1' as const, label: 'Grade 1', tone: 'warn' as const },
+		{ value: 'grade2' as const, label: 'Grade 2', tone: 'warn' as const },
+		{ value: 'grade3' as const, label: 'Grade 3', tone: 'danger' as const }
 	];
 </script>
 
@@ -109,21 +148,20 @@
 				<div class="group-body">
 					<SegmentedControl
 						label={labels.field.undercutLocation}
-						value={survey.undercutLocation}
+						value={undercutLocation}
 						options={undercutLocationOptions}
-						onchange={(v: UndercutLocation) =>
-							caseStore.updateSurvey(fdi, { undercutLocation: v })}
+						onchange={(v: UndercutLocation) => update('undercutLocation', v)}
 					/>
 					<NumericInput
 						label={labels.field.undercutDepthMm}
-						value={survey.undercutDepthMm}
+						value={undercutDepthMm}
 						min={0}
 						max={2}
 						step={0.05}
 						unit="mm"
 						hint="วัดจาก undercut gauge"
 						presets={undercutPresets}
-						onchange={(v) => caseStore.updateSurvey(fdi, { undercutDepthMm: v })}
+						onchange={(v) => update('undercutDepthMm', v)}
 					/>
 				</div>
 			</section>
@@ -133,20 +171,20 @@
 				<div class="group-body">
 					<SegmentedControl
 						label={labels.field.guidePlane}
-						value={survey.guidePlane}
+						value={guidePlane}
 						options={guidePlaneOptions}
-						onchange={(v: GuidePlane) => caseStore.updateSurvey(fdi, { guidePlane: v })}
+						onchange={(v: GuidePlane) => update('guidePlane', v)}
 					/>
 					<NumericInput
 						label={labels.field.vestibuleMm}
-						value={survey.vestibuleMm}
+						value={vestibuleMm}
 						min={0}
 						max={20}
 						step={0.5}
 						unit="mm"
 						hint="วัดจาก gingival margin → vestibule"
 						presets={vestibulePresets}
-						onchange={(v) => caseStore.updateSurvey(fdi, { vestibuleMm: v })}
+						onchange={(v) => update('vestibuleMm', v)}
 					/>
 				</div>
 			</section>
@@ -156,15 +194,15 @@
 				<div class="group-body">
 					<SegmentedControl
 						label={labels.field.prognosis}
-						value={survey.prognosis}
+						value={prognosis}
 						options={prognosisOptions}
-						onchange={(v: Prognosis) => caseStore.updateSurvey(fdi, { prognosis: v })}
+						onchange={(v: Prognosis) => update('prognosis', v)}
 					/>
 					<SegmentedControl
 						label={labels.field.crownRoot}
-						value={survey.crownRoot}
+						value={crownRoot}
 						options={crownRootOptions}
-						onchange={(v: CrownRoot) => caseStore.updateSurvey(fdi, { crownRoot: v })}
+						onchange={(v: CrownRoot) => update('crownRoot', v)}
 					/>
 				</div>
 			</section>
@@ -175,40 +213,35 @@
 					<ToggleSwitch
 						label={labels.field.tipped}
 						hint="ฟันเอียงผิดแนว"
-						checked={survey.tipped}
-						onchange={(v) => caseStore.updateSurvey(fdi, { tipped: v })}
+						checked={tipped}
+						onchange={(v) => update('tipped', v)}
 					/>
 					<ToggleSwitch
 						label={labels.field.requiresAlteration}
 						hint="ต้องการตัดแต่งฟันก่อนใส่"
-						checked={survey.requiresAlteration}
-						onchange={(v) => caseStore.updateSurvey(fdi, { requiresAlteration: v })}
+						checked={requiresAlteration}
+						onchange={(v) => update('requiresAlteration', v)}
 					/>
 					<ToggleSwitch
 						label="Antagonist supraerupted"
 						hint="ฟันคู่สบขึ้นมา restorative space ลด"
-						checked={survey.supraerupted}
-						onchange={(v) => caseStore.updateSurvey(fdi, { supraerupted: v })}
+						checked={supraerupted}
+						onchange={(v) => update('supraerupted', v)}
 					/>
 					<ToggleSwitch
 						label="Surveyed crown ก่อนใช้"
 						hint="ฟันควรทำ crown ก่อนเป็น abutment"
-						checked={survey.surveyedCrown}
-						onchange={(v) => caseStore.updateSurvey(fdi, { surveyedCrown: v })}
+						checked={surveyedCrown}
+						onchange={(v) => update('surveyedCrown', v)}
 					/>
 				</div>
 
 				<div class="group-body" style="margin-top: 0.875rem">
 					<SegmentedControl
 						label="Mobility (Miller)"
-						value={survey.mobility}
-						options={[
-							{ value: 'none', label: 'ไม่มี', tone: 'good' },
-							{ value: 'grade1', label: 'Grade 1', tone: 'warn' },
-							{ value: 'grade2', label: 'Grade 2', tone: 'warn' },
-							{ value: 'grade3', label: 'Grade 3', tone: 'danger' }
-						]}
-						onchange={(v) => caseStore.updateSurvey(fdi, { mobility: v as 'none' | 'grade1' | 'grade2' | 'grade3' })}
+						value={mobility}
+						options={mobilityOptions}
+						onchange={(v) => update('mobility', v as Mobility)}
 					/>
 				</div>
 			</section>
@@ -218,15 +251,15 @@
 				<div class="group-body">
 					<SegmentedControl
 						label={labels.field.spacingMesial}
-						value={survey.spacingMesial}
+						value={spacingMesial}
 						options={spacingOptions}
-						onchange={(v: SpacingType) => caseStore.updateSurvey(fdi, { spacingMesial: v })}
+						onchange={(v: SpacingType) => update('spacingMesial', v)}
 					/>
 					<SegmentedControl
 						label={labels.field.spacingDistal}
-						value={survey.spacingDistal}
+						value={spacingDistal}
 						options={spacingOptions}
-						onchange={(v: SpacingType) => caseStore.updateSurvey(fdi, { spacingDistal: v })}
+						onchange={(v: SpacingType) => update('spacingDistal', v)}
 					/>
 				</div>
 			</section>
@@ -237,9 +270,8 @@
 					class="notes"
 					rows="3"
 					placeholder="หมายเหตุเฉพาะฟัน เช่น caries, restoration, mobility"
-					value={survey.notes}
-					oninput={(e) =>
-						caseStore.updateSurvey(fdi, { notes: (e.currentTarget as HTMLTextAreaElement).value })}
+					value={notes}
+					oninput={(e) => update('notes', (e.currentTarget as HTMLTextAreaElement).value)}
 				></textarea>
 			</section>
 		</div>
