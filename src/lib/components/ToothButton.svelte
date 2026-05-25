@@ -105,16 +105,19 @@
 	}
 	.x-mark {
 		position: absolute;
-		font-size: 1.875rem;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.5rem;
 		font-weight: 700;
 		color: var(--color-coral-600);
-		opacity: 0.6;
+		opacity: 0.7;
 		line-height: 1;
 		pointer-events: none;
-		transform: translateY(-1px);
 	}
 	.tooth.missing .fdi {
-		opacity: 0.6;
+		opacity: 0.5;
 	}
 	.dot {
 		position: absolute;

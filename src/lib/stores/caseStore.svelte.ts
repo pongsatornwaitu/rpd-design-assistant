@@ -66,7 +66,8 @@ function createCaseStore() {
 		setStatus(fdi: FDI, status: ToothSurvey['status']) {
 			if (state.teeth[fdi].status === status) return;
 			pushHistory();
-			state.teeth[fdi].status = status;
+			// Replace tooth object to ensure top-level proxy invalidation across all subscribers
+			state.teeth[fdi] = { ...state.teeth[fdi], status };
 			scheduleSave();
 		},
 		toggleStatus(fdi: FDI) {
@@ -74,22 +75,22 @@ function createCaseStore() {
 		},
 		updateSurvey(fdi: FDI, patch: Partial<ToothSurvey>) {
 			pushHistory();
-			Object.assign(state.teeth[fdi], patch);
+			state.teeth[fdi] = { ...state.teeth[fdi], ...patch };
 			scheduleSave();
 		},
 		setMeta(patch: Partial<CaseData['meta']>) {
 			pushHistory();
-			Object.assign(state.meta, patch);
+			state.meta = { ...state.meta, ...patch };
 			scheduleSave();
 		},
 		setPatientFactors(patch: Partial<CaseData['patientFactors']>) {
 			pushHistory();
-			Object.assign(state.patientFactors, patch);
+			state.patientFactors = { ...state.patientFactors, ...patch };
 			scheduleSave();
 		},
 		setInterarch(patch: Partial<CaseData['interarch']>) {
 			pushHistory();
-			Object.assign(state.interarch, patch);
+			state.interarch = { ...state.interarch, ...patch };
 			scheduleSave();
 		},
 		undo() {
