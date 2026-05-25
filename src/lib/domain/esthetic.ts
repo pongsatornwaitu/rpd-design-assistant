@@ -51,16 +51,24 @@ export function analyzeEsthetic(
 
 	const abutmentsInEstheticZone = abutments.filter((f) => isAnterior(f));
 	// "Posterior abutments" for esthetic strategy = present posterior teeth eligible
-	// to carry direct retainers (e.g. reverse Akers). These don't need to already be
-	// saddle-adjacent abutments in the Kennedy sense.
-	const archAll = archTeeth(arch, true);
-	const posteriorAbutments = archAll.filter(
-		(f) =>
-			!isAnterior(f) &&
-			data.teeth[f].status === 'present' &&
-			data.teeth[f].prognosis !== 'poor' &&
-			data.teeth[f].crownRoot !== 'unfavorable'
-	);
+	// to carry direct retainers (e.g. reverse Akers). Exclude third molars by default
+	// (less reliable abutments — often unstable, hard to access). Include only if no
+	// other posterior teeth available.
+	const archAllNoWisdom = archTeeth(arch, false);
+	const archAllWithWisdom = archTeeth(arch, true);
+	const eligible = (fdis: FDI[]) =>
+		fdis.filter(
+			(f) =>
+				!isAnterior(f) &&
+				data.teeth[f].status === 'present' &&
+				data.teeth[f].prognosis !== 'poor' &&
+				data.teeth[f].crownRoot !== 'unfavorable'
+		);
+	let posteriorAbutments = eligible(archAllNoWisdom);
+	if (posteriorAbutments.length === 0) {
+		// fall back to including third molars if nothing else
+		posteriorAbutments = eligible(archAllWithWisdom);
+	}
 	const hasAnteriorAbutment = abutmentsInEstheticZone.length > 0;
 
 	const tier = determineTier(missingAnteriorCount, missingCanines.length, archEstheticZone.length);

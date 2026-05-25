@@ -14,13 +14,16 @@
 	import { onMount } from 'svelte';
 	import { ALL_FDI } from '$lib/types';
 
-	const analysis = $derived(analyzeCase(caseStore.current, settings.includeThirdMolars));
+	const analysis = $derived.by(() => {
+		caseStore.revision; // force re-evaluation on every state change
+		return analyzeCase(caseStore.current, settings.includeThirdMolars);
+	});
 
 	let selectedFdi = $state<FDI | null>(null);
 	let isMobile = $state(false);
 
-	// Explicit iteration ensures Svelte 5 proxy tracks every tooth's status access
 	const missingCount = $derived.by(() => {
+		caseStore.revision; // force re-evaluation on every state change
 		let n = 0;
 		const teeth = caseStore.current.teeth;
 		for (const fdi of ALL_FDI) {
@@ -30,6 +33,7 @@
 	});
 
 	const concernCount = $derived.by(() => {
+		caseStore.revision; // force re-evaluation on every state change
 		let n = 0;
 		const teeth = caseStore.current.teeth;
 		for (const fdi of ALL_FDI) {

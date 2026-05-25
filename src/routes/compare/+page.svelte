@@ -11,7 +11,10 @@
 	// Scenario B = modified clone of current case
 	let scenarioB = $state<CaseData>(JSON.parse(JSON.stringify(caseStore.current)));
 
-	const analysisA = $derived(analyzeCase(caseStore.current, settings.includeThirdMolars));
+	const analysisA = $derived.by(() => {
+		caseStore.revision;
+		return analyzeCase(caseStore.current, settings.includeThirdMolars);
+	});
 	const analysisB = $derived(analyzeCase(scenarioB, settings.includeThirdMolars));
 
 	function syncFromCurrent() {

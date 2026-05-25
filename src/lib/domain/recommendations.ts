@@ -117,13 +117,16 @@ function rolesOf(spans: EdentulousSpan[]): AbutmentRole[] {
 	return [...byFdi.values()].sort((a, b) => a.fdi - b.fdi);
 }
 
-// ---- Major Connector (uses interarch + vestibule) ----
+// ---- Major Connector (uses interarch + vestibule + esthetic anterior load) ----
 
 function majorConnectorRec(
 	arch: ArchKey,
 	cls: Classification['className'],
-	data: CaseData
+	data: CaseData,
+	esthetic: EstheticAnalysis
 ): Recommendation {
+	const anteriorMissing = esthetic.missingAnteriorCount;
+
 	if (arch === 'maxilla') {
 		if (cls === 'I' || cls === 'II') {
 			return {
@@ -143,16 +146,36 @@ function majorConnectorRec(
 				references: [REF_MCCRACKEN_MAJ]
 			};
 		}
-		return {
-			title: 'Maxillary major connector: Single Palatal Strap',
-			detail:
-				'Bounded edentulous (Class III) — single palatal strap rigidity เพียงพอ ใส่สบาย ไม่ปกปิด palate มาก',
-			severity: 'good',
-			references: [REF_MCCRACKEN_MAJ]
-		};
+
+		// Class III — choice depends on whether anterior teeth missing
+		if (cls === 'III') {
+			if (anteriorMissing >= 4) {
+				return {
+					title: 'Maxillary major connector: Palatal Plate (full coverage)',
+					detail: `Class III + ฟันหน้าหาย ${anteriorMissing} ซี่ — anterior pontic ต้องการ tissue support + maximum rigidity เพื่อกระจาย occlusal load; single strap จะ flex ใต้ pontic, palatal plate ให้ stability สูงสุด`,
+					severity: 'info',
+					references: [REF_MCCRACKEN_MAJ]
+				};
+			}
+			if (anteriorMissing >= 1) {
+				return {
+					title: `Maxillary major connector: AP Palatal Strap (ฟันหน้าหาย ${anteriorMissing} ซี่)`,
+					detail: `Class III ที่มี anterior bounded saddle — anterior pontic จะรับ occlusal load จาก ฟันคู่สบ; AP palatal strap ให้ rigidity ทั้งแกนหน้า-หลัง + stress distribution ดีกว่า single strap ที่ปกปิดเฉพาะกลาง palate; ลด flex ที่ anterior segment`,
+					severity: 'info',
+					references: [REF_MCCRACKEN_MAJ]
+				};
+			}
+			return {
+				title: 'Maxillary major connector: Single Palatal Strap',
+				detail:
+					'Class III posterior bounded only — single palatal strap rigidity เพียงพอ, ใส่สบาย ไม่ปกปิด palate มาก',
+				severity: 'good',
+				references: [REF_MCCRACKEN_MAJ]
+			};
+		}
 	}
 
-	// mandible — vestibule + posterior interarch space
+	// mandible — vestibule + posterior interarch space + anterior loss
 	const teeth = archTeeth(arch, true).filter((f) => data.teeth[f].status === 'present');
 	const minVest = teeth.length
 		? Math.min(...teeth.map((f) => data.teeth[f].vestibuleMm))
@@ -171,6 +194,16 @@ function majorConnectorRec(
 		};
 	}
 
+	// Anterior bounded saddle → lingual plate gives anterior splinting + indirect retention
+	if (anteriorMissing >= 1 && cls === 'III') {
+		return {
+			title: `Mandibular major connector: Lingual Plate (ฟันหน้าหาย ${anteriorMissing} ซี่)`,
+			detail: `Class III + anterior bounded — lingual plate ครอบ cingulum ของ anterior teeth: (1) splint ฟันหน้าที่เหลือ (2) ทำหน้าที่ indirect retainer สำหรับ anti-tipping ของ anterior pontic (3) support pontic load. Lingual bar ปกติไม่ครอบคลุม anterior segment พอ`,
+			severity: 'info',
+			references: [REF_MCCRACKEN_MAJ]
+		};
+	}
+
 	if (cls === 'I' || cls === 'II') {
 		return {
 			title: `Mandibular major connector: Lingual Bar (vestibule ${minVest} mm)`,
@@ -183,7 +216,7 @@ function majorConnectorRec(
 
 	return {
 		title: `Mandibular major connector: Lingual Bar (vestibule ${minVest} mm)`,
-		detail: 'Bounded edentulous — lingual bar เพียงพอ tooth-borne support',
+		detail: 'Bounded edentulous (posterior only) — lingual bar เพียงพอ tooth-borne support',
 		severity: 'good',
 		references: [REF_MCCRACKEN_MAJ]
 	};
@@ -286,8 +319,15 @@ function claspForAnteriorTerminal(fdi: FDI, undercutMm: number): Recommendation 
 	};
 }
 
-function claspRecsFor(roles: AbutmentRole[], data: CaseData): Recommendation[] {
+function claspRecsFor(
+	roles: AbutmentRole[],
+	data: CaseData,
+	esthetic: EstheticAnalysis,
+	useEstheticStrategy: boolean
+): Recommendation[] {
 	const recs: Recommendation[] = [];
+	const posteriorRetainers = esthetic.posteriorAbutments; // already picked top 2
+
 	for (const r of roles) {
 		const s = data.teeth[r.fdi];
 
@@ -302,6 +342,19 @@ function claspRecsFor(roles: AbutmentRole[], data: CaseData): Recommendation[] {
 		}
 
 		const inEsthetic = isAnterior(r.fdi);
+
+		// ESTHETIC STRATEGY: anterior bounded abutment → cingulum support only, no visible clasp
+		// Direct retention comes from posterior reverse Akers (handled below)
+		if (useEstheticStrategy && inEsthetic && r.role === 'bounded') {
+			recs.push({
+				title: `ฟัน ${r.fdi}: Cingulum rest only — NO visible clasp (esthetic priority)`,
+				detail: `อยู่ใน esthetic zone + ใช้ esthetic strategy → ไม่วาง retentive arm ที่ฟันนี้\n• วาง cingulum rest บน lingual surface (1-1.5 mm deep V-notch) — รองรับ vertical load\n• Direct retention มาจาก reverse Akers บน posterior teeth (${posteriorRetainers.length ? posteriorRetainers.join(', ') : 'ดู Specialized Clasps section'})\n• ${RECIPROCATION_NOTE_ESTHETIC}\n• Alternative: rotational path of insertion (Jackson) ถ้า undercut ≥ 0.5 mm`,
+				severity: 'good',
+				references: [REF_MCCRACKEN_DR, REF_PHOENIX]
+			});
+			continue;
+		}
+
 		let rec: Recommendation;
 		if (r.role === 'terminal-distal') {
 			rec = claspForDistalTerminalAbutment(r.fdi, s.undercutDepthMm, s.tipped);
@@ -322,8 +375,26 @@ function claspRecsFor(roles: AbutmentRole[], data: CaseData): Recommendation[] {
 		if (notes.length) rec = { ...rec, detail: `${rec.detail}\n• ${notes.join('\n• ')}` };
 		recs.push(rec);
 	}
+
+	// If esthetic strategy is active, add EXPLICIT posterior reverse Akers recommendations
+	if (useEstheticStrategy && posteriorRetainers.length) {
+		for (const fdi of posteriorRetainers) {
+			const s = data.teeth[fdi];
+			if (s.prognosis === 'poor' || s.crownRoot === 'unfavorable') continue;
+			recs.push({
+				title: `ฟัน ${fdi}: Reverse Akers (esthetic alternative for anterior pontic)`,
+				detail: `Posterior abutment สำหรับ anterior bounded esthetic case — retentive arm มาจาก distal สู่ mesial engage **mesial undercut**: \n• ทำหน้าที่ direct retainer แทน clasp บนฟันหน้า (ที่เห็น)\n• ทำหน้าที่ indirect retainer สำหรับ anti-tipping ของ anterior pontic\n• Reciprocation จาก suprabulge distal minor connector\n• ต้องเตรียม mesial undercut (composite ถ้าไม่มี) + mesial occlusal rest seat\n• ${RECIPROCATION_NOTE}`,
+				severity: 'good',
+				references: [REF_MCCRACKEN_DR, REF_PHOENIX]
+			});
+		}
+	}
+
 	return recs;
 }
+
+const RECIPROCATION_NOTE_ESTHETIC =
+	'Reciprocation มาจาก lingual plate / continuous bar ที่ครอบ cingulum';
 
 // ---- Rests ----
 
@@ -349,9 +420,16 @@ function restTypeFor(fdi: FDI): { type: 'occlusal' | 'cingulum' | 'incisal'; not
 	};
 }
 
-function restRecsFor(roles: AbutmentRole[], spans: EdentulousSpan[], data: CaseData): Recommendation[] {
+function restRecsFor(
+	roles: AbutmentRole[],
+	spans: EdentulousSpan[],
+	data: CaseData,
+	esthetic: EstheticAnalysis,
+	useEstheticStrategy: boolean
+): Recommendation[] {
 	const recs: Recommendation[] = [];
 	const seenSpans = new Set<EdentulousSpan>();
+	const posteriorRetainers = esthetic.posteriorAbutments;
 
 	for (const r of roles) {
 		const restInfo = restTypeFor(r.fdi);
@@ -368,14 +446,42 @@ function restRecsFor(roles: AbutmentRole[], spans: EdentulousSpan[], data: CaseD
 			seenSpans.add(r.span);
 			const restA = restTypeFor(r.span.rightAbutment as FDI);
 			const restB = restTypeFor(r.span.leftAbutment as FDI);
-			recs.push({
-				title: `Span ${r.span.teeth.join(',')}: rests ทั้งสองข้างของ saddle`,
-				detail:
-					`Bounded saddle — rest 2 ด้าน: tooth-borne support, fulcrum line ระหว่างฟันสองข้าง\n• ${r.span.rightAbutment}: ${restA.type} rest — ${restA.note}\n• ${r.span.leftAbutment}: ${restB.type} rest — ${restB.note}`,
-				severity: 'good',
-				references: [REF_MCCRACKEN_DR]
-			});
+
+			// In esthetic strategy, anterior bounded abutments use cingulum rests only (no clasp)
+			if (useEstheticStrategy && (isAnterior(r.span.rightAbutment as FDI) || isAnterior(r.span.leftAbutment as FDI))) {
+				const rightLabel = isAnterior(r.span.rightAbutment as FDI)
+					? `${r.span.rightAbutment}: cingulum rest (รองรับ load, ไม่มี clasp visible)`
+					: `${r.span.rightAbutment}: ${restA.type} rest — ${restA.note}`;
+				const leftLabel = isAnterior(r.span.leftAbutment as FDI)
+					? `${r.span.leftAbutment}: cingulum rest (รองรับ load, ไม่มี clasp visible)`
+					: `${r.span.leftAbutment}: ${restB.type} rest — ${restB.note}`;
+				recs.push({
+					title: `Span ${r.span.teeth.join(',')}: Cingulum rests (esthetic) ทั้งสองข้าง`,
+					detail:
+						`Anterior bounded saddle + esthetic strategy — rest บน abutments ทั้ง 2 ข้างเพื่อ support, ไม่มี clasp arm บนฟันหน้า\n• ${rightLabel}\n• ${leftLabel}\n• Cingulum rest seat: lingual cingulum, V-shaped notch 1-1.5 mm depth × 2 mm wide; ถ้า cingulum ตื้น → composite addition หรือ surveyed crown`,
+					severity: 'good',
+					references: [REF_MCCRACKEN_DR]
+				});
+			} else {
+				recs.push({
+					title: `Span ${r.span.teeth.join(',')}: rests ทั้งสองข้างของ saddle`,
+					detail:
+						`Bounded saddle — rest 2 ด้าน: tooth-borne support, fulcrum line ระหว่างฟันสองข้าง\n• ${r.span.rightAbutment}: ${restA.type} rest — ${restA.note}\n• ${r.span.leftAbutment}: ${restB.type} rest — ${restB.note}`,
+					severity: 'good',
+					references: [REF_MCCRACKEN_DR]
+				});
+			}
 		}
+	}
+
+	// In esthetic strategy, add mesial rest seat for posterior reverse Akers retainers
+	if (useEstheticStrategy && posteriorRetainers.length) {
+		recs.push({
+			title: `Posterior retainer rest seats: mesial rest บน ${posteriorRetainers.join(', ')}`,
+			detail: `Reverse Akers บน posterior teeth (${posteriorRetainers.join(', ')}) ต้องการ mesial occlusal rest:\n• Rest seat: 1/3 mesiodistal × 1/2 buccolingual × 1-1.5 mm depth\n• วาง mesial fossa เพื่อ fulcrum line อยู่ทาง mesial — ทำหน้าที่ indirect retention คู่กัน\n• ฟันนี้ไม่ใช่ saddle abutment แต่ใช้สำหรับ direct retention ของ esthetic design`,
+			severity: 'info',
+			references: [REF_MCCRACKEN_DR]
+		});
 	}
 
 	// Crown lengthening flag — short clinical crown that may not accommodate rest seat
@@ -547,8 +653,22 @@ export function analyzeArch(
 	const abutmentRoles = rolesOf(spans);
 	const fulcrum = analyzeFulcrum(arch, data, spans, classification.className);
 	const esthetic = analyzeEsthetic(arch, data, spans, abutments);
+
+	// Decide whether to apply esthetic strategy (no anterior clasps, use posterior retainers)
+	// Conditions: anterior teeth missing AND has anterior abutment AND has posterior retainer candidates
+	const useEstheticStrategy =
+		esthetic.tier !== 'no-anterior-loss' &&
+		esthetic.tier !== 'five-plus-teeth' &&
+		esthetic.hasAnteriorAbutment &&
+		esthetic.posteriorAbutments.length > 0;
+
+	// Effective retainer teeth = saddle abutments + posterior retainers if esthetic
+	const effectiveRetainers = useEstheticStrategy
+		? [...new Set([...abutments, ...esthetic.posteriorAbutments])].sort((a, b) => a - b)
+		: abutments;
+
 	const interarchConcerns = analyzeInterarchSpace(arch, data);
-	const mouthPrep = generateMouthPrep(arch, data, abutments);
+	const mouthPrep = generateMouthPrep(arch, data, effectiveRetainers);
 	const isToothSupported = classification.className === 'III' || classification.className === 'IV';
 	const anteCheck = applyAntesLaw(data, spans, abutments, isToothSupported);
 	const patientWarnings = patientConsiderations(data);
@@ -583,10 +703,10 @@ export function analyzeArch(
 		spans,
 		abutments,
 		abutmentRoles,
-		majorConnector: majorConnectorRec(arch, classification.className, data),
-		clasps: claspRecsFor(abutmentRoles, data),
+		majorConnector: majorConnectorRec(arch, classification.className, data, esthetic),
+		clasps: claspRecsFor(abutmentRoles, data, esthetic, useEstheticStrategy),
 		specializedClasps: specialized,
-		rests: restRecsFor(abutmentRoles, spans, data),
+		rests: restRecsFor(abutmentRoles, spans, data, esthetic, useEstheticStrategy),
 		indirectRetention: [...indirectRetentionRecs(fulcrum), ...fulcrumWarnings],
 		estheticStrategy: estheticRecs(esthetic),
 		interarchConcerns: interarchRecs(interarchConcerns),

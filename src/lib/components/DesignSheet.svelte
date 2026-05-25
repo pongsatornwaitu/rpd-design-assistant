@@ -7,7 +7,10 @@
 	import { base } from '$app/paths';
 	import type { FDI } from '$lib/types';
 
-	const analysis = $derived(analyzeCase(caseStore.current));
+	const analysis = $derived.by(() => {
+		caseStore.revision; // force re-evaluation on every state change
+		return analyzeCase(caseStore.current);
+	});
 	const generatedAt = $derived(new Date(caseStore.current.meta.updatedAt).toLocaleString('th-TH'));
 
 	let activeFdi = $state<FDI | null>(null);

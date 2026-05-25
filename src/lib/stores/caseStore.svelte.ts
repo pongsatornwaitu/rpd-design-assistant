@@ -30,6 +30,11 @@ function createCaseStore() {
 	const future: CaseData[] = [];
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let lastSavedAt = $state<number | null>(null);
+	let revision = $state(0);
+
+	function bump() {
+		revision++;
+	}
 
 	function snapshot(): CaseData {
 		return $state.snapshot(state) as CaseData;
@@ -54,6 +59,11 @@ function createCaseStore() {
 		get current() {
 			return state;
 		},
+		/** Revision counter — incremented on every state change. Read this in $derived
+		 *  to guarantee re-evaluation when nested proxy mutations may not propagate. */
+		get revision() {
+			return revision;
+		},
 		get canUndo() {
 			return past.length > 0;
 		},
@@ -67,6 +77,7 @@ function createCaseStore() {
 			if (state.teeth[fdi].status === status) return;
 			pushHistory();
 			state.teeth[fdi].status = status;
+			bump();
 			scheduleSave();
 		},
 		toggleStatus(fdi: FDI) {
@@ -75,21 +86,25 @@ function createCaseStore() {
 		updateSurvey(fdi: FDI, patch: Partial<ToothSurvey>) {
 			pushHistory();
 			Object.assign(state.teeth[fdi], patch);
+			bump();
 			scheduleSave();
 		},
 		setMeta(patch: Partial<CaseData['meta']>) {
 			pushHistory();
 			Object.assign(state.meta, patch);
+			bump();
 			scheduleSave();
 		},
 		setPatientFactors(patch: Partial<CaseData['patientFactors']>) {
 			pushHistory();
 			Object.assign(state.patientFactors, patch);
+			bump();
 			scheduleSave();
 		},
 		setInterarch(patch: Partial<CaseData['interarch']>) {
 			pushHistory();
 			Object.assign(state.interarch, patch);
+			bump();
 			scheduleSave();
 		},
 		undo() {
@@ -97,6 +112,7 @@ function createCaseStore() {
 			if (!prev) return;
 			future.push(snapshot());
 			state = prev;
+			bump();
 			scheduleSave();
 		},
 		redo() {
@@ -104,16 +120,19 @@ function createCaseStore() {
 			if (!next) return;
 			past.push(snapshot());
 			state = next;
+			bump();
 			scheduleSave();
 		},
 		reset() {
 			pushHistory();
 			state = emptyCase();
+			bump();
 			scheduleSave();
 		},
 		load(data: CaseData) {
 			pushHistory();
 			state = data;
+			bump();
 			scheduleSave();
 		}
 	};

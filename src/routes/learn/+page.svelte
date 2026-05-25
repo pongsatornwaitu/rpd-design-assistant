@@ -9,7 +9,10 @@
 	import { base } from '$app/paths';
 	import type { FDI } from '$lib/types';
 
-	const analysis = $derived(analyzeCase(caseStore.current, settings.includeThirdMolars));
+	const analysis = $derived.by(() => {
+		caseStore.revision;
+		return analyzeCase(caseStore.current, settings.includeThirdMolars);
+	});
 
 	let currentStep = $state(1);
 	let selectedFdi = $state<FDI | null>(null);
